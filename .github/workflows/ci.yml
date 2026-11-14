@@ -121,7 +121,7 @@ jobs:
       - name: Build standalone executable
         shell: bash
         run: |
-          uv run pyinstaller --clean --noconfirm --onefile --name desktop-control-mcp --collect-all mcp --collect-all pydantic --collect-submodules backends ${{ matrix.pyinstaller_args }} cli.py
+          uv run --no-sync pyinstaller --clean --noconfirm --onefile --name desktop-control-mcp --collect-all mcp --collect-all pydantic --collect-submodules backends ${{ matrix.pyinstaller_args }} cli.py
       - name: Smoke test executable (Unix)
         if: runner.os != 'Windows'
         shell: bash
