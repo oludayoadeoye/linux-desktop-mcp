@@ -5,11 +5,31 @@ A local Python MCP server for controlling an EndeavourOS / Arch Linux KDE Plasma
 ## Features
 
 - 19 MCP tools for screenshots, mouse/keyboard input, app launching, desktop status, browser automation, and KDE window management.
+- MCP over stdio (agent-launched local process) or Streamable HTTP (loopback service).
+- Installable `linux-desktop-mcp` command via uv tools or uvx.
+- Optional one-file Linux executable build using PyInstaller.
 - KWin JavaScript integration with a small session D-Bus bridge for window discovery and targeted window operations.
 - Persistent headless Firefox context via Playwright MCP.
-- Streamable HTTP transport, bound to loopback only.
 
-## Quick install (EndeavourOS / Arch)
+## Install as a CLI
+
+Install directly from GitHub:
+
+```bash
+uv tool install git+https://github.com/oludayoadeoye/linux-desktop-mcp
+linux-desktop-mcp --help
+linux-desktop-mcp serve --transport stdio
+```
+
+Or run without installing persistently:
+
+```bash
+uvx --from git+https://github.com/oludayoadeoye/linux-desktop-mcp linux-desktop-mcp serve --transport stdio
+```
+
+## Full EndeavourOS / Arch setup
+
+The Python CLI alone does not install system-level desktop dependencies or the Playwright/KWin sidecars. For the complete KDE Wayland setup, use the Arch installer:
 
 ```bash
 git clone https://github.com/oludayoadeoye/linux-desktop-mcp.git
@@ -17,18 +37,28 @@ cd linux-desktop-mcp
 ./scripts/install-arch.sh
 ```
 
-Log out and back into KDE after installation so KWin loads the script package. For prerequisites, detailed setup, service management, verification, and uninstall steps, see [Installation guide](docs/INSTALL.md).
+The installer creates and starts the Playwright MCP, KWin D-Bus bridge, and desktop MCP user services. Log out and back into KDE after installation so KWin loads its script package. See [the full installation guide](docs/INSTALL.md).
 
-## MCP endpoints and clients
+## Run modes
 
-- Desktop MCP: `http://127.0.0.1:8932/mcp`
-- Standalone Playwright MCP: `http://127.0.0.1:8931/mcp`
+```bash
+linux-desktop-mcp serve --transport stdio
+linux-desktop-mcp serve --transport http --host 127.0.0.1 --port 8932
+linux-desktop-mcp status
+```
 
-The desktop server integrates with Playwright internally. Most clients should connect only to the desktop endpoint. It uses MCP Streamable HTTP and binds to `127.0.0.1`, so the client must run on the same machine.
+Stdio is the default and is intended for agents that launch MCP servers as subprocesses. HTTP is intended for local service integrations. The Arch installer configures HTTP on `127.0.0.1:8932/mcp`.
 
-Client setup examples are documented for [Cursor](docs/INSTALL.md#cursor-direct-local-http), [ChatGPT desktop](docs/INSTALL.md#chatgpt-desktop-app-direct-local-http), and [Claude Desktop](docs/INSTALL.md#claude-desktop-stdio-bridge-to-local-http). ChatGPT web and Claude cloud connectors cannot directly reach a loopback-only server; use their documented secure tunnel or public HTTPS options only if you intentionally choose to make a remote connection available.
+## Standalone executable
 
-**Verification:** a Python MCP SDK client successfully initialized, discovered all 19 tools, and invoked `desktop_status`. GUI setup examples are based on the clients' published documentation; GUI setup has not been tested on every client. See the [full installation and client guide](docs/INSTALL.md).
+Build a Linux one-file executable on the target architecture:
+
+```bash
+./scripts/build-binary.sh
+./dist/linux-desktop-mcp --help
+```
+
+The binary bundles Python dependencies only; it does not bundle KDE, D-Bus, ydotool, Spectacle, the KWin bridge, Playwright MCP, or Firefox. See [binary and runtime requirements](docs/INSTALL.md#standalone-linux-executable).
 
 ## Development
 
@@ -38,11 +68,11 @@ uv run ruff check .
 uv run pytest -q
 ```
 
-The automated tests mock external desktop/browser effects. GitHub Actions runs lint, tests, and Python compilation for pushes and pull requests.
+The automated tests mock external desktop/browser effects. GitHub Actions runs lint, tests, and Python compilation.
 
-## Security notes
+## Security
 
-- Both HTTP MCP endpoints listen on `127.0.0.1` only.
+- The HTTP MCP endpoint binds to `127.0.0.1` by default.
 - Application launching is allowlisted in `main.py`.
 - Browser navigation accepts only absolute HTTP and HTTPS URLs.
 - Desktop-control tools can interact with the user's active desktop. Connect only trusted MCP clients; do not expose these ports publicly.

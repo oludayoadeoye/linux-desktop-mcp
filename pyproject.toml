@@ -1,17 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "linux-desktop-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local Python MCP server for KDE desktop automation and persistent Playwright browser control on Linux."
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "mcp[cli]<2",
     "pydantic>=2.14.3",
 ]
 
+[project.scripts]
+linux-desktop-mcp = "cli:main"
+
+[tool.setuptools]
+py-modules = ["main", "cli"]
+
 [dependency-groups]
 dev = [
     "pytest>=8.3",
     "ruff>=0.11",
+]
+build = [
+    "pyinstaller>=6.10",
 ]
 
 [tool.pytest.ini_options]

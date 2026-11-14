@@ -5,7 +5,7 @@ After=graphical-session.target
 [Service]
 Type=simple
 WorkingDirectory=%h/projects/linux-desktop-mcp
-ExecStart=%h/.local/bin/uv run --no-sync python main.py
+ExecStart=%h/.local/bin/uv run --no-sync linux-desktop-mcp serve --transport http --host 127.0.0.1 --port 8932
 Restart=on-failure
 RestartSec=3
 Environment=PYTHONUNBUFFERED=1

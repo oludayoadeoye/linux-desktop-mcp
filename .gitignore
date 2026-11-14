@@ -16,3 +16,6 @@ wheels/
 .env
 .env.*
 !.env.example
+
+# PyInstaller-generated project file
+linux-desktop-mcp.spec

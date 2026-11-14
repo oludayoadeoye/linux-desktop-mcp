@@ -79,7 +79,7 @@ Wants=playwright-mcp.service kwin-desktop-bridge.service
 [Service]
 Type=simple
 WorkingDirectory=$PROJECT_DIR
-ExecStart=$UV_BIN run --project $PROJECT_DIR --no-sync python main.py
+ExecStart=$UV_BIN run --project $PROJECT_DIR --no-sync linux-desktop-mcp serve --transport http --host 127.0.0.1 --port 8932
 Restart=on-failure
 RestartSec=3
 Environment=PYTHONUNBUFFERED=1

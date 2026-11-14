@@ -193,3 +193,85 @@ The uninstaller intentionally does not remove Node/npm packages, Firefox browser
 - Do not change the host to `0.0.0.0` or expose either port publicly.
 - The desktop server can type into applications, click, and close windows. Connect only trusted MCP clients.
 - Browser navigation accepts HTTP and HTTPS URLs; treat browser tools as privileged access to the local browser context.
+
+
+## 7. Install as a uv CLI (without cloning manually)
+
+The project publishes a console command named `linux-desktop-mcp`. Install it directly from GitHub:
+
+```bash
+uv tool install git+https://github.com/oludayoadeoye/linux-desktop-mcp
+linux-desktop-mcp --help
+linux-desktop-mcp status
+```
+
+To run it ephemerally without a persistent tool installation:
+
+```bash
+uvx --from git+https://github.com/oludayoadeoye/linux-desktop-mcp linux-desktop-mcp --help
+uvx --from git+https://github.com/oludayoadeoye/linux-desktop-mcp linux-desktop-mcp serve --transport stdio
+```
+
+For development from a checkout:
+
+```bash
+uv sync --locked --group dev
+uv run linux-desktop-mcp serve --transport stdio
+uv run linux-desktop-mcp serve --transport http --host 127.0.0.1 --port 8932
+uv run linux-desktop-mcp status
+uv run linux-desktop-mcp test
+```
+
+The default transport is stdio, which is suitable for agents that launch a local MCP process. HTTP is opt-in. Keep the HTTP host on loopback unless you have deliberately configured an authenticated, secured remote deployment.
+
+### Agent configuration (stdio)
+
+Cursor and Claude Desktop support local stdio MCP processes. Merge this server entry into the relevant client's existing MCP configuration. Use the absolute executable path returned by `command -v linux-desktop-mcp` if the client does not inherit your shell PATH.
+
+```json
+{
+  "mcpServers": {
+    "linux-desktop-control": {
+      "command": "linux-desktop-mcp",
+      "args": ["serve", "--transport", "stdio"]
+    }
+  }
+}
+```
+
+For a uv-managed install where the client cannot resolve the executable, use:
+
+```json
+{
+  "mcpServers": {
+    "linux-desktop-control": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oludayoadeoye/linux-desktop-mcp",
+        "linux-desktop-mcp",
+        "serve",
+        "--transport",
+        "stdio"
+      ]
+    }
+  }
+}
+```
+
+### Standalone Linux executable
+
+A one-file PyInstaller build can be produced on the target Linux architecture:
+
+```bash
+./scripts/build-binary.sh
+./dist/linux-desktop-mcp --help
+```
+
+Copy `dist/linux-desktop-mcp` to a directory on PATH. PyInstaller bundles the Python application and Python dependencies, but **does not bundle the desktop environment or companion services**. The target still needs the KDE/Wayland session, user D-Bus, `ydotool`, `qdbus6`, Spectacle, the KWin bridge service, and the Playwright MCP sidecar/browser. Build on the Linux distribution/architecture you intend to support. Do not treat a binary as a portable replacement for the Arch installer.
+
+### What is installed vs. what runs
+
+The Python CLI is the MCP server. Browser automation and window control depend on separate local processes: Playwright MCP on port 8931 and the KWin D-Bus bridge in the logged-in KDE session. The Arch installer configures these sidecars as user systemd services. If you use only `uv tool install` or `uvx`, install and start those sidecars separately before expecting browser/window tools to work. Basic desktop tools also require their system commands and permissions.
+
+`linux-desktop-mcp status` reports the three user services and whether the two local TCP endpoints are reachable. `linux-desktop-mcp test` runs pytest when development dependencies are installed; for a normal uv tool install, use the development checkout and `uv sync --group dev` to run the test suite.

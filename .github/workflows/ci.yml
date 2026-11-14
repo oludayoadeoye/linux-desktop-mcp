@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  lint-and-test:
+  lint-test-build:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -37,4 +37,18 @@ jobs:
         run: uv run pytest -q
 
       - name: Compile Python modules
-        run: uv run python -m compileall -q main.py kwin-bridge-service.py tests
+        run: uv run python -m compileall -q main.py cli.py kwin-bridge-service.py tests
+
+      - name: Build wheel and source distribution
+        run: uv build
+
+      - name: Build standalone executable
+        run: |
+          uv sync --locked --group build
+          ./scripts/build-binary.sh
+
+      - name: Upload Linux executable
+        uses: actions/upload-artifact@v6
+        with:
+          name: linux-desktop-mcp-linux-x86_64
+          path: dist/linux-desktop-mcp
