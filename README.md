@@ -1,6 +1,6 @@
-# Linux Desktop Control MCP
+# Desktop Control MCP
 
-A local Python MCP server for controlling an EndeavourOS / Arch Linux KDE Plasma Wayland desktop, with window management and persistent Playwright browser automation.
+A local Python MCP server with native desktop backends for KDE Plasma Wayland on Linux and macOS, plus persistent Playwright browser automation. MCP tool names and schemas stay consistent across operating systems while native backends handle input, screenshots, application launching, and window management.
 
 ## Quick install (Linux x86_64)
 
@@ -20,8 +20,38 @@ The installer downloads the latest GitHub Release, verifies its SHA-256 digest a
 - MCP over stdio (agent-launched local process) or Streamable HTTP (loopback service).
 - Installable `linux-desktop-mcp` command via uv tools or uvx.
 - Optional one-file Linux executable build using PyInstaller.
-- KWin JavaScript integration with a small session D-Bus bridge for window discovery and targeted window operations.
+- Native backend architecture: Linux KDE/Wayland and macOS Quartz/Accessibility.
+- KWin JavaScript integration with a small session D-Bus bridge for Linux window discovery and targeted window operations.
+- macOS input via Quartz events, screenshots via screencapture, and window operations via System Events Accessibility.
 - Persistent headless Firefox context via Playwright MCP.
+
+## macOS setup (initial native backend)
+
+The macOS backend uses Quartz for mouse/keyboard events, screencapture for screenshots, open for application launching, and AppleScript/System Events for window operations.
+
+Requirements: macOS 13+, Python 3.11+, uv, Node.js/npm, and a logged-in GUI session. From a cloned checkout:
+
+~~~bash
+uv sync --locked --group dev
+npm install --global playwright-mcp playwright
+playwright install firefox
+~~~
+
+Start the browser sidecar in one terminal:
+
+~~~bash
+playwright-mcp --port 8931 --host 127.0.0.1 --browser firefox --isolated --headless
+~~~
+
+Start the desktop MCP in another terminal:
+
+~~~bash
+uv run desktop-control-mcp serve --transport http --host 127.0.0.1 --port 8932
+~~~
+
+On first use, grant Accessibility to the terminal/agent host for mouse, keyboard and window control, and Screen Recording for screenshots under System Settings → Privacy & Security. Restart the MCP process after changing permissions.
+
+The macOS backend has unit tests using mocked Quartz APIs, but it has not yet been exercised on a physical macOS host. Window-management behavior varies by application and its accessibility support. The current one-command release installer remains Linux x86_64 only; macOS users install from source with uv until native macOS release builds are added.
 
 ## Full EndeavourOS / Arch setup
 
@@ -38,9 +68,9 @@ It creates and starts the Playwright MCP, KWin D-Bus bridge, and desktop MCP use
 ## Run modes
 
 ```bash
-linux-desktop-mcp serve --transport stdio
-linux-desktop-mcp serve --transport http --host 127.0.0.1 --port 8932
-linux-desktop-mcp status
+desktop-control-mcp serve --transport stdio
+desktop-control-mcp serve --transport http --host 127.0.0.1 --port 8932
+desktop-control-mcp status
 ```
 
 Stdio is the default and is intended for agents that launch MCP servers as subprocesses. HTTP is intended for local service integrations. The Arch installer configures HTTP on `127.0.0.1:8932/mcp`.

@@ -82,3 +82,33 @@ jobs:
         run: |
           gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1 || gh release create "${GITHUB_REF_NAME}" --generate-notes
           gh release upload "${GITHUB_REF_NAME}" dist/linux-desktop-mcp dist/SHA256SUMS --clobber
+
+
+  macos-unit-tests:
+    # Exercise dependency resolution and backend tests on a native macOS runner.
+    runs-on: macos-14
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+
+      - name: Install project and development dependencies
+        run: uv sync --locked --group dev
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Test platform-neutral tools and macOS backend
+        run: uv run pytest -q
+
+      - name: Build Python distributions
+        run: uv build

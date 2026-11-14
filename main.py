@@ -3,12 +3,9 @@ from __future__ import annotations
 import asyncio
 import concurrent.futures
 import json
-import os
-import shutil
+import shutil  # noqa: F401 - retained as a compatibility alias for existing test clients.
 import subprocess
-import tempfile
 import threading
-from pathlib import Path
 from typing import Annotated
 
 from mcp import ClientSession
@@ -16,12 +13,17 @@ from mcp.client.streamable_http import streamablehttp_client
 from mcp.server.fastmcp import FastMCP, Image
 from pydantic import Field
 
+from backends import get_backend
+
+desktop_backend = get_backend()
+
 mcp = FastMCP(
-    "EndeavourOS Desktop Control",
+    "Cross-platform Desktop Control",
     instructions=(
-        "Control the user's local KDE Plasma desktop on Wayland. "
+        "Control the user's local desktop using the native operating-system backend. "
         "Use screenshots to inspect the screen before acting. "
-        "Never claim an action succeeded unless its command succeeded."
+        "Never claim an action succeeded unless its command succeeded. "
+        "macOS requires Accessibility and Screen Recording permissions."
     ),
     host="127.0.0.1",
     port=8932,
@@ -109,27 +111,16 @@ def run_checked(args: list[str], timeout: float = 8.0) -> str:
 
 @mcp.tool()
 def desktop_screenshot() -> Image:
-    """Capture the current desktop using KDE Spectacle and return the image."""
-    fd, filename = tempfile.mkstemp(prefix="desktop-control-", suffix=".png")
-    os.close(fd)
-    path = Path(filename)
-    try:
-        run_checked(["spectacle", "-b", "-n", "-o", str(path)], timeout=20)
-        if not path.exists() or path.stat().st_size == 0:
-            raise RuntimeError("Spectacle did not produce a screenshot")
-        return Image(data=path.read_bytes(), format="png")
-    finally:
-        path.unlink(missing_ok=True)
+    """Capture the current desktop and return the screenshot image."""
+    return desktop_backend.screenshot()
 
 
 @mcp.tool()
 def mouse_move(
-    x: Annotated[int, Field(ge=0, le=20000)],
-    y: Annotated[int, Field(ge=0, le=20000)],
+    x: Annotated[int, Field(ge=0, le=20000)], y: Annotated[int, Field(ge=0, le=20000)]
 ) -> str:
     """Move the mouse pointer to absolute desktop coordinates."""
-    run_checked(["ydotool", "mousemove", "--absolute", "-x", str(x), "-y", str(y)])
-    return f"Mouse moved to ({x}, {y})."
+    return desktop_backend.mouse_move(x, y)
 
 
 @mcp.tool()
@@ -138,86 +129,40 @@ def mouse_click(
     clicks: Annotated[int, Field(ge=1, le=2)] = 1,
 ) -> str:
     """Click at the current pointer position; supports left, right, or middle."""
-    for _ in range(clicks):
-        run_checked(["ydotool", "click", BUTTONS[button]])
-    return f"Performed {clicks} {button} click(s)."
+    return desktop_backend.mouse_click(button, clicks)
 
 
 @mcp.tool()
 def keyboard_type(text: Annotated[str, Field(min_length=1, max_length=4000)]) -> str:
     """Type literal text into the currently focused application."""
-    run_checked(["ydotool", "type", "--key-delay", "1", text], timeout=30)
-    return f"Typed {len(text)} characters."
+    return desktop_backend.keyboard_type(text)
 
 
 @mcp.tool()
 def keyboard_hotkey(keys: list[str]) -> str:
-    """Press a key or key combination, e.g. ['ctrl', 'l'] or ['enter']."""
+    """Press a key or key combination, e.g. ['ctrl', 'l'] or ['command', 'space']."""
     if not keys or len(keys) > 4:
         raise ValueError("Provide between 1 and 4 keys.")
-    normalized = [key.lower() for key in keys]
-    unknown = [key for key in normalized if key not in KEY_CODES]
-    if unknown:
-        raise ValueError(f"Unsupported key name(s): {', '.join(unknown)}")
-    events = [f"{KEY_CODES[key]}:1" for key in normalized]
-    events += [f"{KEY_CODES[key]}:0" for key in reversed(normalized)]
-    run_checked(["ydotool", "key", *events])
-    return f"Pressed {' + '.join(normalized)}."
+    return desktop_backend.keyboard_hotkey(keys)
 
 
 @mcp.tool()
 def launch_application(
     application: Annotated[
-        str, Field(pattern="^(firefox|brave|dolphin|konsole|kate|spectacle|systemsettings)$")
+        str,
+        Field(
+            pattern="^(firefox|brave|finder|terminal|safari|textedit|vscode|dolphin|konsole|kate|spectacle|systemsettings)$"
+        ),
     ],
 ) -> str:
     """Launch an allowlisted desktop application."""
-    executable = APP_ALLOWLIST[application]
-    resolved = shutil.which(executable)
-    if not resolved:
-        raise RuntimeError(f"{executable} is not installed or not on PATH.")
-    subprocess.Popen(
-        [resolved],
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        start_new_session=True,
-    )
-    return f"Launched {application}."
+    return desktop_backend.launch_application(application)
 
 
 @mcp.tool()
 def desktop_status() -> str:
     """Report desktop session, display configuration, and selected running apps."""
-    session = {
-        key: os.environ.get(key, "")
-        for key in ("XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "WAYLAND_DISPLAY")
-    }
-    display = ""
-    if shutil.which("kscreen-doctor"):
-        try:
-            display = run_checked(["kscreen-doctor", "-o"], timeout=5)
-        except Exception as exc:
-            display = f"Display query unavailable: {exc}"
-    apps = ""
-    if shutil.which("ps"):
-        result = subprocess.run(
-            ["ps", "-eo", "pid=,comm=,args="],
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=False,
-        )
-        selected = [
-            line.strip()
-            for line in result.stdout.splitlines()
-            if any(name in line.lower() for name in APP_ALLOWLIST)
-        ][:30]
-        apps = "\n".join(selected)
-    return (
-        f"Session: {session}\n\nDisplays:\n{display or 'Unavailable'}"
-        f"\n\nSelected running applications:\n{apps or 'None detected'}"
-    )
+    return desktop_backend.desktop_status()
 
 
 # Browser integration: one persistent client session keeps the Playwright context alive.
@@ -480,62 +425,44 @@ def _kwin_action(action: str, match: str) -> str:
 
 @mcp.tool()
 def window_list() -> str:
-    """List open KDE windows with titles, application classes, PIDs, desktops and state."""
-    windows = _kwin_refresh()
-    return json.dumps(windows, ensure_ascii=False, indent=2)
+    """List open windows with titles, application names, process IDs and state."""
+    return desktop_backend.window_list()
 
 
 @mcp.tool()
 def window_focus(match: Annotated[str, Field(min_length=1, max_length=300)]) -> str:
-    """Focus a window by title substring or exact app class (e.g. Brave or org.kde.konsole)."""
-    return _kwin_action("focus", match)
+    """Focus a window by title substring or exact application name."""
+    return desktop_backend.window_focus(match)
 
 
 @mcp.tool()
 def window_switch(direction: Annotated[str, Field(pattern="^(next|previous)$")] = "next") -> str:
-    """Switch to the next or previous KDE window using the desktop's Alt+Tab switcher."""
-    keys = ["alt", "tab"] if direction == "next" else ["alt", "shift", "tab"]
-    events = [f"{KEY_CODES[k]}:1" for k in keys]
-    events += [f"{KEY_CODES[k]}:0" for k in reversed(keys)]
-    run_checked(["ydotool", "key", *events])
-    return f"Requested {direction} window switch through KDE's window switcher."
+    """Switch to the next or previous window using the desktop window switcher."""
+    return desktop_backend.window_switch(direction)
 
 
 @mcp.tool()
 def window_minimize(match: Annotated[str | None, Field(max_length=300)] = None) -> str:
-    """Minimize a window matched by title/app class; omit match to minimize the active window."""
-    if match:
-        return _kwin_action("minimize", match)
-    events = [f"{KEY_CODES[k]}:1" for k in ("super", "down")]
-    events += [f"{KEY_CODES[k]}:0" for k in ("down", "super")]
-    run_checked(["ydotool", "key", *events])
-    return "Sent KDE's Meta+Down minimize shortcut to the active window."
+    """Minimize a matched window; omit match to target the active window."""
+    return desktop_backend.window_minimize(match)
 
 
 @mcp.tool()
 def window_maximize(match: Annotated[str | None, Field(max_length=300)] = None) -> str:
-    """Maximize a window matched by title/app class; omit match to maximize the active window."""
-    if match:
-        return _kwin_action("maximize", match)
-    events = [f"{KEY_CODES[k]}:1" for k in ("super", "up")]
-    events += [f"{KEY_CODES[k]}:0" for k in ("up", "super")]
-    run_checked(["ydotool", "key", *events])
-    return "Sent KDE's Meta+Up maximize shortcut to the active window."
+    """Maximize a matched window; omit match to target the active window."""
+    return desktop_backend.window_maximize(match)
 
 
 @mcp.tool()
 def window_restore(match: Annotated[str, Field(min_length=1, max_length=300)]) -> str:
-    """Restore a minimized or maximized window by title substring or application class."""
-    return _kwin_action("restore", match)
+    """Restore a minimized or maximized window by title or application name."""
+    return desktop_backend.window_restore(match)
 
 
 @mcp.tool()
 def window_close(match: Annotated[str | None, Field(max_length=300)] = None) -> str:
-    """Close a matched window; omit match to send Alt+F4 to the active window."""
-    if match:
-        return _kwin_action("close", match)
-    run_checked(["ydotool", "key", "56:1", "62:1", "62:0", "56:0"])
-    return "Sent KDE's Alt+F4 close shortcut to the active window."
+    """Close a matched window; omit match to target the active window."""
+    return desktop_backend.window_close(match)
 
 
 if __name__ == "__main__":

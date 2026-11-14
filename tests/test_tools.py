@@ -10,6 +10,15 @@ from unittest.mock import MagicMock
 import pytest
 
 import main
+from backends.linux import LinuxBackend
+
+
+@pytest.fixture(autouse=True)
+def use_linux_backend_for_existing_linux_tool_tests(monkeypatch):
+    # The historical integration tests below mock ydotool/KWin command calls.
+    # Force that adapter so the same suite is deterministic on macOS CI too.
+    monkeypatch.setattr(main, "desktop_backend", LinuxBackend())
+
 
 EXPECTED_TOOLS = {
     "desktop_screenshot",

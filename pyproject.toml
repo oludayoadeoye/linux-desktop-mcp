@@ -4,20 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "linux-desktop-mcp"
-version = "0.2.1"
-description = "Local Python MCP server for KDE desktop automation and persistent Playwright browser control on Linux."
+version = "0.3.0"
+description = "Cross-platform local Python MCP server for desktop automation and persistent Playwright browser control."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "mcp[cli]<2",
     "pydantic>=2.14.3",
+    "pyobjc-framework-Quartz>=10; sys_platform == 'darwin'",
 ]
 
 [project.scripts]
 linux-desktop-mcp = "cli:main"
+desktop-control-mcp = "cli:main"
 
 [tool.setuptools]
 py-modules = ["main", "cli"]
+
+[tool.setuptools.packages.find]
+include = ["backends*"]
 
 [dependency-groups]
 dev = [

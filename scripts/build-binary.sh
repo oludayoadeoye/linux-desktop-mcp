@@ -9,5 +9,6 @@ uv run pyinstaller \
   --name linux-desktop-mcp \
   --collect-all mcp \
   --collect-all pydantic \
+  --collect-submodules backends \
   cli.py
 ./dist/linux-desktop-mcp --help

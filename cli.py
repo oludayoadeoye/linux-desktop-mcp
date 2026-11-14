@@ -11,8 +11,8 @@ import sys
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="linux-desktop-mcp",
-        description="KDE desktop automation MCP server for Linux.",
+        prog="desktop-control-mcp",
+        description="Cross-platform desktop automation MCP server.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -27,9 +27,7 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--port", type=int, default=8932, help="HTTP port.")
 
     subparsers.add_parser("status", help="Show the status of the desktop MCP services.")
-    subparsers.add_parser(
-        "test", help="Run the project pytest suite (requires dev dependencies)."
-    )
+    subparsers.add_parser("test", help="Run the project pytest suite (requires dev dependencies).")
     return parser
 
 
@@ -56,13 +54,18 @@ def _port_status(port: int) -> str:
 
 
 def run_status() -> int:
-    print("Linux Desktop MCP service status")
-    for service in (
-        "desktop-control.service",
-        "playwright-mcp.service",
-        "kwin-desktop-bridge.service",
-    ):
-        print(f"{service}: {_service_status(service)}")
+    print("Desktop Control MCP service status")
+    if sys.platform == "darwin":
+        print("Native macOS backend: selected")
+        print("Accessibility permission: required for mouse, keyboard and window control")
+        print("Screen Recording permission: required for screenshots")
+    else:
+        for service in (
+            "desktop-control.service",
+            "playwright-mcp.service",
+            "kwin-desktop-bridge.service",
+        ):
+            print(f"{service}: {_service_status(service)}")
     print(f"Playwright MCP (127.0.0.1:8931): {_port_status(8931)}")
     print(f"Desktop MCP HTTP (127.0.0.1:8932): {_port_status(8932)}")
     return 0

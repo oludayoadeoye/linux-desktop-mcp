@@ -303,6 +303,55 @@ PyInstaller bundles the Python application and Python dependencies, but **does n
 
 ### What is installed vs. what runs
 
-The Python CLI is the MCP server. Browser automation and window control depend on separate local processes: Playwright MCP on port 8931 and the KWin D-Bus bridge in the logged-in KDE session. The Arch installer configures these sidecars as user systemd services. If you use only `uv tool install` or `uvx`, install and start those sidecars separately before expecting browser/window tools to work. Basic desktop tools also require their system commands and permissions.
+The Python CLI is the MCP server. Browser automation depends on the local Playwright MCP process on port 8931. Linux window control additionally uses the KWin D-Bus bridge in the logged-in KDE session; the Arch installer configures these sidecars as user systemd services. macOS uses its native Accessibility backend and does not use the KWin bridge. If you use only `uv tool install` or `uvx`, install and start those sidecars separately before expecting browser/window tools to work. Basic desktop tools also require their system commands and permissions.
 
 `linux-desktop-mcp status` reports the three user services and whether the two local TCP endpoints are reachable. `linux-desktop-mcp test` runs pytest when development dependencies are installed; for a normal uv tool install, use the development checkout and `uv sync --group dev` to run the test suite.
+
+
+---
+
+# macOS setup (initial native backend)
+
+## Requirements
+
+- macOS 13 or later
+- Python 3.11+ and uv
+- Node.js/npm for the Playwright MCP browser sidecar
+- A logged-in interactive macOS user session
+
+## Install from a checkout
+
+~~~bash
+git clone https://github.com/oludayoadeoye/linux-desktop-mcp.git
+cd linux-desktop-mcp
+uv sync --locked --group dev
+npm install --global playwright-mcp playwright
+playwright install firefox
+~~~
+
+Start the browser sidecar in a separate terminal:
+
+~~~bash
+playwright-mcp --port 8931 --host 127.0.0.1 --browser firefox --isolated --headless
+~~~
+
+Start the desktop MCP:
+
+~~~bash
+uv run desktop-control-mcp serve --transport http --host 127.0.0.1 --port 8932
+~~~
+
+The native macOS backend is selected automatically. The same MCP tool names and schemas are used on Linux and macOS.
+
+## macOS privacy permissions
+
+The first desktop interaction may trigger macOS privacy prompts. Grant:
+
+- Accessibility to the terminal or agent host running the MCP server for mouse, keyboard, application and window operations.
+- Screen Recording to the same host for desktop screenshots.
+
+Manage these at System Settings → Privacy & Security → Accessibility and Screen Recording. Restart the MCP process after changing permissions.
+
+## Current macOS backend scope
+
+Quartz provides pointer and keyboard events; screencapture provides screenshots; open -a launches applications; System Events Accessibility handles window focus/minimize/maximize/restore/close. Application-specific Accessibility behavior can vary. This backend currently has mocked-Quartz unit coverage but has not yet been validated on a physical macOS host. The prebuilt one-command release installer is still Linux x86_64 only; use the uv source install on macOS.
