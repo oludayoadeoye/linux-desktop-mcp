@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -34,8 +35,38 @@ class LinuxBackend:
         finally:
             p.unlink(missing_ok=True)
 
+    def _desktop_bounds(self):
+        """Return the virtual desktop width and height in logical pixels."""
+        m = self._m()
+        output = m.run_checked(["kscreen-doctor", "-o"], timeout=5)
+        output = re.sub(r"\x1b\[[0-9;]*m", "", output)
+        geometries = []
+        for block in re.split(r"(?m)^Output:", output)[1:]:
+            if not re.search(r"(?m)^\s*enabled\s*$", block):
+                continue
+            match = re.search(
+                r"(?m)^\s*Geometry:\s*(-?\d+),(-?\d+)\s+(\d+)x(\d+)\s*$",
+                block,
+            )
+            if match:
+                x, y, width, height = map(int, match.groups())
+                geometries.append((x, y, x + width, y + height))
+        if not geometries:
+            raise RuntimeError("Could not determine enabled display geometry from kscreen-doctor.")
+        left = min(item[0] for item in geometries)
+        top = min(item[1] for item in geometries)
+        right = max(item[2] for item in geometries)
+        bottom = max(item[3] for item in geometries)
+        return right - left, bottom - top
+
     def mouse_move(self, x, y):
-        self._m().run_checked(["ydotool", "mousemove", "--absolute", "-x", str(x), "-y", str(y)])
+        # ydotool's absolute input range is 0..65535, not screen pixels.
+        width, height = self._desktop_bounds()
+        absolute_x = round(max(0, min(x, width - 1)) * 65535 / max(1, width - 1))
+        absolute_y = round(max(0, min(y, height - 1)) * 65535 / max(1, height - 1))
+        self._m().run_checked(
+            ["ydotool", "mousemove", "--absolute", "-x", str(absolute_x), "-y", str(absolute_y)]
+        )
         return f"Mouse moved to ({x}, {y})."
 
     def mouse_click(self, button, clicks):

@@ -71,11 +71,16 @@ def test_desktop_screenshot_returns_png_and_cleans_tempfile(monkeypatch):
     assert not captured["path"].exists()
 
 
-def test_mouse_move_invokes_ydotool(monkeypatch):
+def test_mouse_move_scales_pixel_coordinates_for_ydotool(monkeypatch):
     calls = []
+    monkeypatch.setattr(LinuxBackend, "_desktop_bounds", lambda self: (1920, 1200))
     monkeypatch.setattr(main, "run_checked", lambda args, **kw: calls.append(args) or "")
     assert main.mouse_move(120, 240) == "Mouse moved to (120, 240)."
-    assert calls == [["ydotool", "mousemove", "--absolute", "-x", "120", "-y", "240"]]
+    assert calls == [[
+        "ydotool", "mousemove", "--absolute",
+        "-x", str(round(120 * 65535 / 1919)),
+        "-y", str(round(240 * 65535 / 1199)),
+    ]]
 
 
 def test_mouse_click_repeats_requested_button(monkeypatch):
