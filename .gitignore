@@ -1,0 +1,18 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Browser automation artifacts / page snapshots
+.playwright-mcp/
+
+# Local environment
+.env
+.env.*
+!.env.example

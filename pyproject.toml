@@ -1,0 +1,9 @@
+[project]
+name = "linux-desktop-mcp"
+version = "0.1.0"
+description = "Local Python MCP server for KDE desktop automation and persistent Playwright browser control on Linux."
+requires-python = ">=3.11"
+dependencies = [
+    "mcp[cli]<2",
+    "pydantic>=2.14.3",
+]
