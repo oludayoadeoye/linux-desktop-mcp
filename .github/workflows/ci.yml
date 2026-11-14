@@ -102,13 +102,15 @@ jobs:
           enable-cache: true
 
       - name: Install project and development dependencies
-        run: uv sync --locked --group dev
+        # The CLI's optional crypto/auth support is not exercised by these tests;
+        # skipping its source build keeps Intel macOS CI fast where no wheel is published.
+        run: uv sync --locked --group dev --no-install-package cryptography
 
       - name: Lint
-        run: uv run ruff check .
+        run: uv run --no-sync ruff check .
 
       - name: Test platform-neutral tools and macOS backend
-        run: uv run pytest -q
+        run: uv run --no-sync pytest -q
 
       - name: Build Python distributions
         run: uv build
