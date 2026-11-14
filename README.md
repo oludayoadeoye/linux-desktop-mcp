@@ -36,7 +36,17 @@ Your agent can work with the desktop instead of only talking about it.
 
 ## Live demo
 
-A real screen recording of the agent controlling a desktop is being prepared. The finished video and a lightweight preview will be published here.
+This 13-second clip shows the MCP server interacting with a real EndeavourOS desktop: navigating project files and managing application windows.
+
+<p align="center">
+  <a href="docs/media/desktop-control-demo.mp4"><img src="docs/media/desktop-control-demo.gif" alt="Desktop Control MCP demo: navigating files and managing desktop windows" width="720"></a>
+</p>
+
+<p align="center">
+  <a href="docs/media/desktop-control-demo.mp4"><strong>▶ Watch the MP4 demo</strong></a>
+</p>
+
+The clip demonstrates Linux desktop interaction. It is not a claim that every tool or every operating-system backend has been physically tested.
 
 ## Get started
 
