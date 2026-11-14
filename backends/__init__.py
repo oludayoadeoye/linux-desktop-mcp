@@ -12,6 +12,10 @@ def get_backend() -> DesktopBackend:
         from .macos import MacOSBackend
 
         return MacOSBackend()
+    if sys.platform == "win32":
+        from .windows import WindowsBackend
+
+        return WindowsBackend()
     if sys.platform.startswith("linux"):
         from .linux import LinuxBackend
 

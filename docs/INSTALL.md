@@ -10,7 +10,7 @@ curl -fsSL https://raw.githubusercontent.com/oludayoadeoye/linux-desktop-mcp/mas
 
 The script downloads the latest GitHub Release, verifies its SHA-256 digest against GitHub release metadata, and installs to `~/.local/bin` without sudo. Set `INSTALL_DIR` to override the destination. If no binary exists for the architecture, it falls back to a uv source installation.
 
-**Private repository note:** this repository is currently private, so the anonymous `curl | bash` command cannot retrieve the installer. Clone the repository using authenticated GitHub credentials and run `bash install.sh` from the checkout; the script uses an existing `gh auth login` session to download private release assets. The one-command installer installs the CLI only; it does not provision KDE/Wayland dependencies, the KWin bridge, Playwright MCP, or Firefox.
+The one-command installer installs the CLI only; it does not provision KDE/Wayland dependencies, the KWin bridge, Playwright MCP, or Firefox.
 
 Verify:
 

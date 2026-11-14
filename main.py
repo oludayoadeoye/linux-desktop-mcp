@@ -23,7 +23,8 @@ mcp = FastMCP(
         "Control the user's local desktop using the native operating-system backend. "
         "Use screenshots to inspect the screen before acting. "
         "Never claim an action succeeded unless its command succeeded. "
-        "macOS requires Accessibility and Screen Recording permissions."
+        "macOS requires Accessibility and Screen Recording permissions. "
+        "Windows desktop control must run in the logged-in interactive user session."
     ),
     host="127.0.0.1",
     port=8932,
@@ -151,7 +152,7 @@ def launch_application(
     application: Annotated[
         str,
         Field(
-            pattern="^(firefox|brave|finder|terminal|safari|textedit|vscode|dolphin|konsole|kate|spectacle|systemsettings)$"
+            pattern="^(firefox|brave|finder|terminal|safari|textedit|vscode|dolphin|konsole|kate|spectacle|systemsettings|notepad|calculator|cmd|powershell|explorer|edge|chrome|word|excel|paint)$"
         ),
     ],
 ) -> str:

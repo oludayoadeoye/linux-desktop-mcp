@@ -1,6 +1,6 @@
 # Desktop Control MCP
 
-A local Python MCP server with native desktop backends for KDE Plasma Wayland on Linux and macOS, plus persistent Playwright browser automation. MCP tool names and schemas stay consistent across operating systems while native backends handle input, screenshots, application launching, and window management.
+A local Python MCP server with native desktop backends for KDE Plasma Wayland on Linux, macOS, and Windows, plus persistent Playwright browser automation. MCP tool names and schemas stay consistent across operating systems while native backends handle input, screenshots, application launching, and window management.
 
 ## Quick install (Linux x86_64)
 
@@ -12,17 +12,16 @@ curl -fsSL https://raw.githubusercontent.com/oludayoadeoye/linux-desktop-mcp/mas
 
 The installer downloads the latest GitHub Release, verifies its SHA-256 digest against GitHub release metadata, and installs to `~/.local/bin`. If no prebuilt binary exists for the architecture, it falls back to a uv source installation. The one-command installer installs the CLI only; it does not provision KDE/Wayland dependencies or the Playwright/KWin sidecars.
 
-**Repository visibility:** this repository is currently private, so the public `curl | bash` command above will only work after the repository is made public. For authorized private-repository access, clone with your GitHub credentials and run `bash install.sh` from the checkout; the script can use your authenticated `gh` session to fetch the release.
-
 ## Features
 
 - 19 MCP tools for screenshots, mouse/keyboard input, app launching, desktop status, browser automation, and KDE window management.
 - MCP over stdio (agent-launched local process) or Streamable HTTP (loopback service).
 - Installable `desktop-control-mcp` command, with backward-compatible `linux-desktop-mcp` alias, via uv tools or uvx.
 - Optional one-file Linux executable build using PyInstaller.
-- Native backend architecture: Linux KDE/Wayland and macOS Quartz/Accessibility.
+- Native backend architecture: Linux KDE/Wayland, macOS Quartz/Accessibility, and Windows Win32/PyAutoGUI.
 - KWin JavaScript integration with a small session D-Bus bridge for Linux window discovery and targeted window operations.
 - macOS input via Quartz events, screenshots via screencapture, and window operations via System Events Accessibility.
+- Windows input and screenshots via PyAutoGUI, with window management through native Win32 APIs.
 - Persistent headless Firefox context via Playwright MCP.
 
 ## macOS setup (initial native backend)
@@ -51,7 +50,20 @@ uv run desktop-control-mcp serve --transport http --host 127.0.0.1 --port 8932
 
 On first use, grant Accessibility to the terminal/agent host for mouse, keyboard and window control, and Screen Recording for screenshots under System Settings → Privacy & Security. Restart the MCP process after changing permissions.
 
-The macOS backend has unit tests using mocked Quartz APIs, but it has not yet been exercised on a physical macOS host. Window-management behavior varies by application and its accessibility support. The current one-command release installer remains Linux x86_64 only; macOS users install from source with uv until native macOS release builds are added.
+The macOS backend has unit tests using mocked Quartz APIs, but it has not yet been exercised on a physical macOS host. Window-management behavior varies by application and its accessibility support. The current one-command release installer remains Linux x86_64 only; macOS and Windows users install from source with uv until native release builds are added.
+
+## Windows setup (initial native backend)
+
+Requirements: Windows 10/11, Python 3.11+, and uv, running in the signed-in interactive desktop session. Clone the repository, then install the Windows-specific dependencies and development tools:
+
+```powershell
+git clone https://github.com/oludayoadeoye/linux-desktop-mcp.git
+cd linux-desktop-mcp
+uv sync --locked --group dev
+uv run desktop-control-mcp serve --transport stdio
+```
+
+The Windows backend uses Win32 APIs for window enumeration, focus, minimize, maximize, restore, and close; PyAutoGUI handles screenshots, mouse input, and keyboard input. Applications are launched from a small allowlist (Notepad, Calculator, Terminal, Explorer, Edge, Chrome, Firefox, VS Code, Word, Excel, and Paint). Run the MCP host in the logged-in interactive session; Windows services running in session 0 cannot control the user desktop. This backend is covered by mocked unit tests and Windows CI, but still needs interactive validation on a physical Windows desktop.
 
 ## Full EndeavourOS / Arch setup
 

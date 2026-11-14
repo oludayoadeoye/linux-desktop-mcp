@@ -55,7 +55,10 @@ def _port_status(port: int) -> str:
 
 def run_status() -> int:
     print("Desktop Control MCP service status")
-    if sys.platform == "darwin":
+    if sys.platform == "win32":
+        print("Native Windows backend: selected")
+        print("Desktop interaction uses the logged-in Windows user session")
+    elif sys.platform == "darwin":
         print("Native macOS backend: selected")
         print("Accessibility permission: required for mouse, keyboard and window control")
         print("Screen Recording permission: required for screenshots")

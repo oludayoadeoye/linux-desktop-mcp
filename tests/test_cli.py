@@ -64,3 +64,12 @@ def test_status_reports_macos_permissions_and_ports(monkeypatch, capsys):
     assert "Accessibility permission" in output
     assert "Screen Recording permission" in output
     assert "Playwright MCP (127.0.0.1:8931): reachable" in output
+
+
+def test_status_reports_windows_backend_and_interactive_session(monkeypatch, capsys):
+    monkeypatch.setattr(cli.sys, "platform", "win32")
+    monkeypatch.setattr(cli, "_port_status", lambda port: "reachable")
+    assert cli.main(["status"]) == 0
+    output = capsys.readouterr().out
+    assert "Native Windows backend: selected" in output
+    assert "logged-in Windows user session" in output

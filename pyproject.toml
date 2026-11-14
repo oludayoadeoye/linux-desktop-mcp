@@ -12,6 +12,7 @@ dependencies = [
     "mcp[cli]<2",
     "pydantic>=2.14.3",
     "pyobjc-framework-Quartz>=10; sys_platform == 'darwin'",
+    "pyautogui>=0.9.54; sys_platform == 'win32'",
 ]
 
 [project.scripts]
