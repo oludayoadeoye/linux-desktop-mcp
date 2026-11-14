@@ -18,7 +18,7 @@ The installer downloads the latest GitHub Release, verifies its SHA-256 digest a
 
 - 19 MCP tools for screenshots, mouse/keyboard input, app launching, desktop status, browser automation, and KDE window management.
 - MCP over stdio (agent-launched local process) or Streamable HTTP (loopback service).
-- Installable `linux-desktop-mcp` command via uv tools or uvx.
+- Installable `desktop-control-mcp` command, with backward-compatible `linux-desktop-mcp` alias, via uv tools or uvx.
 - Optional one-file Linux executable build using PyInstaller.
 - Native backend architecture: Linux KDE/Wayland and macOS Quartz/Accessibility.
 - KWin JavaScript integration with a small session D-Bus bridge for Linux window discovery and targeted window operations.

@@ -305,7 +305,7 @@ PyInstaller bundles the Python application and Python dependencies, but **does n
 
 The Python CLI is the MCP server. Browser automation depends on the local Playwright MCP process on port 8931. Linux window control additionally uses the KWin D-Bus bridge in the logged-in KDE session; the Arch installer configures these sidecars as user systemd services. macOS uses its native Accessibility backend and does not use the KWin bridge. If you use only `uv tool install` or `uvx`, install and start those sidecars separately before expecting browser/window tools to work. Basic desktop tools also require their system commands and permissions.
 
-`linux-desktop-mcp status` reports the three user services and whether the two local TCP endpoints are reachable. `linux-desktop-mcp test` runs pytest when development dependencies are installed; for a normal uv tool install, use the development checkout and `uv sync --group dev` to run the test suite.
+`desktop-control-mcp status` reports Linux user services (or macOS permission guidance) and whether the local TCP endpoints are reachable. `desktop-control-mcp test` runs pytest when development dependencies are installed; for a normal uv tool install, use the development checkout and `uv sync --group dev` to run the test suite. The `linux-desktop-mcp` command remains available as a compatibility alias.
 
 
 ---
