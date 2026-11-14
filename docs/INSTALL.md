@@ -1,3 +1,32 @@
+# Installation
+
+## Quick CLI installation (Linux x86_64)
+
+Install the latest standalone executable:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oludayoadeoye/linux-desktop-mcp/master/install.sh | bash
+```
+
+The script downloads the latest GitHub Release, verifies its SHA-256 digest against GitHub release metadata, and installs to `~/.local/bin` without sudo. Set `INSTALL_DIR` to override the destination. If no binary exists for the architecture, it falls back to a uv source installation.
+
+**Private repository note:** this repository is currently private, so the anonymous `curl | bash` command cannot retrieve the installer. Clone the repository using authenticated GitHub credentials and run `bash install.sh` from the checkout; the script uses an existing `gh auth login` session to download private release assets. The one-command installer installs the CLI only; it does not provision KDE/Wayland dependencies, the KWin bridge, Playwright MCP, or Firefox.
+
+Verify:
+
+```bash
+linux-desktop-mcp --help
+linux-desktop-mcp status
+```
+
+If the command is not found, add `~/.local/bin` to PATH:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+---
+
 # Installation on EndeavourOS / Arch Linux
 
 This guide installs the desktop MCP, its KWin D-Bus bridge, and the isolated headless Playwright browser service for a **KDE Plasma Wayland** session.

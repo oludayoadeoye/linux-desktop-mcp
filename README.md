@@ -2,6 +2,18 @@
 
 A local Python MCP server for controlling an EndeavourOS / Arch Linux KDE Plasma Wayland desktop, with window management and persistent Playwright browser automation.
 
+## Quick install (Linux x86_64)
+
+Install the latest verified standalone CLI binary:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oludayoadeoye/linux-desktop-mcp/master/install.sh | bash
+```
+
+The installer downloads the latest GitHub Release, verifies its SHA-256 digest against GitHub release metadata, and installs to `~/.local/bin`. If no prebuilt binary exists for the architecture, it falls back to a uv source installation. The one-command installer installs the CLI only; it does not provision KDE/Wayland dependencies or the Playwright/KWin sidecars.
+
+**Repository visibility:** this repository is currently private, so the public `curl | bash` command above will only work after the repository is made public. For authorized private-repository access, clone with your GitHub credentials and run `bash install.sh` from the checkout; the script can use your authenticated `gh` session to fetch the release.
+
 ## Features
 
 - 19 MCP tools for screenshots, mouse/keyboard input, app launching, desktop status, browser automation, and KDE window management.
@@ -11,25 +23,9 @@ A local Python MCP server for controlling an EndeavourOS / Arch Linux KDE Plasma
 - KWin JavaScript integration with a small session D-Bus bridge for window discovery and targeted window operations.
 - Persistent headless Firefox context via Playwright MCP.
 
-## Install as a CLI
-
-Install directly from GitHub:
-
-```bash
-uv tool install git+https://github.com/oludayoadeoye/linux-desktop-mcp
-linux-desktop-mcp --help
-linux-desktop-mcp serve --transport stdio
-```
-
-Or run without installing persistently:
-
-```bash
-uvx --from git+https://github.com/oludayoadeoye/linux-desktop-mcp linux-desktop-mcp serve --transport stdio
-```
-
 ## Full EndeavourOS / Arch setup
 
-The Python CLI alone does not install system-level desktop dependencies or the Playwright/KWin sidecars. For the complete KDE Wayland setup, use the Arch installer:
+For the complete KDE Wayland setup, including system dependencies and user services, use the Arch installer:
 
 ```bash
 git clone https://github.com/oludayoadeoye/linux-desktop-mcp.git
@@ -37,7 +33,7 @@ cd linux-desktop-mcp
 ./scripts/install-arch.sh
 ```
 
-The installer creates and starts the Playwright MCP, KWin D-Bus bridge, and desktop MCP user services. Log out and back into KDE after installation so KWin loads its script package. See [the full installation guide](docs/INSTALL.md).
+It creates and starts the Playwright MCP, KWin D-Bus bridge, and desktop MCP user services. Log out and back into KDE after installation so KWin loads its script package. See [the full installation guide](docs/INSTALL.md).
 
 ## Run modes
 
@@ -58,7 +54,7 @@ Build a Linux one-file executable on the target architecture:
 ./dist/linux-desktop-mcp --help
 ```
 
-The binary bundles Python dependencies only; it does not bundle KDE, D-Bus, ydotool, Spectacle, the KWin bridge, Playwright MCP, or Firefox. See [binary and runtime requirements](docs/INSTALL.md#standalone-linux-executable).
+GitHub Actions builds the Linux x86_64 executable on Ubuntu 22.04 as an older glibc baseline, and publishes a SHA-256 manifest with tagged releases. Debian compatibility still needs testing on the specific Debian versions you intend to support. The binary bundles Python dependencies only; it does not bundle KDE, D-Bus, ydotool, Spectacle, the KWin bridge, Playwright MCP, or Firefox. See [binary and runtime requirements](docs/INSTALL.md#standalone-linux-executable).
 
 ## Development
 
@@ -68,7 +64,7 @@ uv run ruff check .
 uv run pytest -q
 ```
 
-The automated tests mock external desktop/browser effects. GitHub Actions runs lint, tests, and Python compilation.
+The automated tests mock external desktop/browser effects. GitHub Actions runs lint, tests, compilation, and packaging.
 
 ## Security
 

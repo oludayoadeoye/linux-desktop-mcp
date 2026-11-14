@@ -3,16 +3,18 @@ name: Python CI
 on:
   push:
     branches: [master, main]
+    tags: ["v*"]
   pull_request:
     branches: [master, main]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   lint-test-build:
-    runs-on: ubuntu-latest
+    # Build on an older glibc baseline to improve compatibility with Debian and other Linux distributions.
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
@@ -47,8 +49,21 @@ jobs:
           uv sync --locked --group build
           ./scripts/build-binary.sh
 
-      - name: Upload Linux executable
+      - name: Generate executable checksum
+        run: cd dist && sha256sum linux-desktop-mcp > SHA256SUMS
+
+      - name: Upload Linux release artifacts
         uses: actions/upload-artifact@v6
         with:
           name: linux-desktop-mcp-linux-x86_64
-          path: dist/linux-desktop-mcp
+          path: |
+            dist/linux-desktop-mcp
+            dist/SHA256SUMS
+
+      - name: Attach executable and checksum to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1 || gh release create "${GITHUB_REF_NAME}" --generate-notes
+          gh release upload "${GITHUB_REF_NAME}" dist/linux-desktop-mcp dist/SHA256SUMS --clobber
