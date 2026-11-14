@@ -97,7 +97,7 @@ jobs:
             os: macos-15-intel
             binary: desktop-control-mcp
             archive: desktop-control-mcp-macos-x86_64
-            pyinstaller_args: --collect-all Quartz
+            pyinstaller_args: --hidden-import Quartz
           - target: macos-arm64
             os: macos-15
             binary: desktop-control-mcp
