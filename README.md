@@ -56,3 +56,51 @@ The desktop MCP keeps one Playwright MCP client session alive so browser state p
 - Application launching is allowlisted in `main.py`.
 - Browser navigation accepts only absolute HTTP and HTTPS URLs.
 - This is a local desktop automation bridge, not a remote network service. Do not expose its ports publicly.
+
+## Connecting MCP clients
+
+The desktop server exposes the **MCP Streamable HTTP** transport at:
+
+```text
+http://127.0.0.1:8932/mcp
+```
+
+Add that URL in an MCP host that supports connecting to a remote Streamable HTTP server. The endpoint is loopback-only, so the MCP host must run on this same Linux machine (or use an explicitly configured secure tunnel; do not expose this service directly to the internet).
+
+The separate Playwright MCP service is available at:
+
+```text
+http://127.0.0.1:8931/mcp
+```
+
+Connect to it separately only if you want to use the standalone Playwright MCP tools. The desktop server already integrates with this service internally for its `browser_*` tools.
+
+### Client compatibility notes
+
+- **Verified:** a standalone Python MCP SDK client initialized against `http://127.0.0.1:8932/mcp`, discovered all 19 tools, and successfully called `desktop_status`.
+- **Not yet verified:** setup and tool invocation from individual GUI hosts (for example, Claude Desktop or ChatGPT). Their support for remote Streamable HTTP endpoints and their configuration screens vary by version. Follow the host's current documentation and use the endpoint above where remote HTTP MCP servers are supported.
+- **Not a stdio server:** this project currently serves Streamable HTTP; clients that only accept stdio MCP servers need a compatible HTTP-to-stdio bridge or a stdio transport implementation, neither of which is included here.
+
+### Verify a connection with the Python MCP SDK
+
+From this project directory, run:
+
+```bash
+uv run python - <<'PY'
+import asyncio
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
+
+async def main():
+    async with streamablehttp_client("http://127.0.0.1:8932/mcp") as (read, write, _):
+        async with ClientSession(read, write) as session:
+            info = await session.initialize()
+            tools = await session.list_tools()
+            print(f"Connected to {info.serverInfo.name} {info.serverInfo.version}")
+            print(f"Discovered {len(tools.tools)} tools")
+            result = await session.call_tool("desktop_status", {})
+            print(result.content)
+
+asyncio.run(main())
+PY
+```
