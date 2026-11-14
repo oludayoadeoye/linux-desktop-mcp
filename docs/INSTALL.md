@@ -1,6 +1,6 @@
 # Installation
 
-## Quick CLI installation (Linux x86_64)
+## Quick CLI installation (Linux x86_64 / ARM64)
 
 Install the latest standalone executable:
 
@@ -11,6 +11,52 @@ curl -fsSL https://raw.githubusercontent.com/oludayoadeoye/linux-desktop-mcp/mas
 The script downloads the latest GitHub Release, verifies its SHA-256 digest against GitHub release metadata, and installs to `~/.local/bin` without sudo. Set `INSTALL_DIR` to override the destination. If no binary exists for the architecture, it falls back to a uv source installation.
 
 The one-command installer installs the CLI only; it does not provision KDE/Wayland dependencies, the KWin bridge, Playwright MCP, or Firefox.
+
+## Standalone binaries for other platforms
+
+Tagged releases publish five native executables and a SHA-256 manifest:
+
+| Asset | Target |
+|---|---|
+| `desktop-control-mcp-linux-x86_64` | Linux x86_64 |
+| `desktop-control-mcp-linux-aarch64` | Linux ARM64 |
+| `desktop-control-mcp-windows-x86_64.exe` | Windows x64 |
+| `desktop-control-mcp-macos-x86_64` | macOS Intel |
+| `desktop-control-mcp-macos-arm64` | macOS Apple Silicon |
+
+Download the correct executable and `SHA256SUMS` from [the latest GitHub release](https://github.com/oludayoadeoye/linux-desktop-mcp/releases/latest). Verify the file before running it.
+
+**Linux (including EndeavourOS/Arch):**
+
+```bash
+grep 'desktop-control-mcp-linux-x86_64' SHA256SUMS | sha256sum -c -
+chmod +x desktop-control-mcp-linux-x86_64
+./desktop-control-mcp-linux-x86_64 --help
+```
+
+The Linux x86_64 executable is built on Ubuntu 22.04 for a conservative glibc baseline and smoke-tested in Debian 12 and 13. Arch does not need a separate executable; the KDE/Wayland system dependencies still need to be installed separately. Use the ARM64 asset on ARM64 Linux.
+
+**macOS:**
+
+```bash
+grep 'desktop-control-mcp-macos-arm64' SHA256SUMS | shasum -a 256 -c -
+chmod +x desktop-control-mcp-macos-arm64  # Apple Silicon; use x86_64 on Intel
+./desktop-control-mcp-macos-arm64 --help
+```
+
+The macOS executables are currently unsigned and not notarized. macOS may show a Gatekeeper warning; only approve the binary after verifying its checksum. Grant Accessibility and Screen Recording permissions to the terminal or agent host.
+
+**Windows PowerShell:**
+
+```powershell
+Get-FileHash .\desktop-control-mcp-windows-x86_64.exe -Algorithm SHA256
+.\desktop-control-mcp-windows-x86_64.exe --help
+```
+
+Compare the displayed hash with the matching entry in `SHA256SUMS`. The executable must run in the signed-in interactive desktop session, not as a Session 0 Windows service.
+
+These are standalone CLI binaries, not full desktop-stack installers. They do not install Playwright MCP, Firefox, KDE/Wayland tools, or the KWin bridge.
+
 
 Verify:
 

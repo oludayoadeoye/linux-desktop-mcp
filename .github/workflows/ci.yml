@@ -1,4 +1,4 @@
-name: Python CI
+name: Python CI and cross-platform releases
 
 on:
   push:
@@ -12,133 +12,166 @@ permissions:
   contents: write
 
 jobs:
-  lint-test-build:
-    # Build on Ubuntu 22.04 to keep the glibc baseline compatible with modern Debian releases.
+  lint-test:
     runs-on: ubuntu-22.04
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v5
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.3
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: true
-
-      - name: Install project and development dependencies
+      - name: Install dependencies
         run: uv sync --locked --group dev
-
       - name: Lint
         run: uv run ruff check .
-
       - name: Test
         run: uv run pytest -q
-
-      - name: Check shell installer syntax
+      - name: Check shell scripts
         run: bash -n install.sh scripts/install-arch.sh scripts/build-binary.sh
-
       - name: Compile Python modules
         run: uv run python -m compileall -q main.py cli.py kwin-bridge-service.py tests
-
-      - name: Build wheel and source distribution
+      - name: Build Python distributions
         run: uv build
 
-      - name: Build standalone executable
-        run: |
-          uv sync --locked --group build
-          ./scripts/build-binary.sh
-
-      - name: Smoke test executable on Debian 12
-        run: |
-          docker run --rm --platform linux/amd64 \
-            --volume "$PWD/dist/linux-desktop-mcp:/usr/local/bin/linux-desktop-mcp:ro" \
-            debian:12-slim /usr/local/bin/linux-desktop-mcp --help
-
-      - name: Smoke test executable on Debian 13
-        run: |
-          docker run --rm --platform linux/amd64 \
-            --volume "$PWD/dist/linux-desktop-mcp:/usr/local/bin/linux-desktop-mcp:ro" \
-            debian:13-slim /usr/local/bin/linux-desktop-mcp --help
-
-      - name: Generate executable checksum
-        run: cd dist && sha256sum linux-desktop-mcp > SHA256SUMS
-
-      - name: Upload Linux release artifacts
-        uses: actions/upload-artifact@v6
-        with:
-          name: linux-desktop-mcp-linux-x86_64
-          path: |
-            dist/linux-desktop-mcp
-            dist/SHA256SUMS
-
-      - name: Attach executable and checksum to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1 || gh release create "${GITHUB_REF_NAME}" --generate-notes
-          gh release upload "${GITHUB_REF_NAME}" dist/linux-desktop-mcp dist/SHA256SUMS --clobber
-
-
   macos-unit-tests:
-    # Exercise dependency resolution and backend tests on a native macOS runner.
     runs-on: macos-15-intel
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v5
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.3
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: true
-
-      - name: Install project and development dependencies
-        # The CLI's optional crypto/auth support is not exercised by these tests;
-        # skipping its source build keeps Intel macOS CI fast where no wheel is published.
+      - name: Install dependencies
         run: uv sync --locked --group dev --no-install-package cryptography
-
       - name: Lint
         run: uv run --no-sync ruff check .
-
-      - name: Test platform-neutral tools and macOS backend
+      - name: Test
         run: uv run --no-sync pytest -q
-
       - name: Build Python distributions
         run: uv build
 
   windows-unit-tests:
     runs-on: windows-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v5
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.3
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: true
-
-      - name: Install project and development dependencies
+      - name: Install dependencies
         run: uv sync --locked --group dev
-
       - name: Lint
         run: uv run ruff check .
-
       - name: Test
         run: uv run pytest -q
-
       - name: Build Python distributions
         run: uv build
+
+  build-binaries:
+    name: Build ${{ matrix.target }}
+    needs: [lint-test, macos-unit-tests, windows-unit-tests]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-x86_64
+            os: ubuntu-22.04
+            binary: desktop-control-mcp
+            archive: desktop-control-mcp-linux-x86_64
+          - target: linux-aarch64
+            os: ubuntu-22.04-arm
+            binary: desktop-control-mcp
+            archive: desktop-control-mcp-linux-aarch64
+          - target: windows-x86_64
+            os: windows-2025
+            binary: desktop-control-mcp.exe
+            archive: desktop-control-mcp-windows-x86_64.exe
+            pyinstaller_args: --collect-all pyautogui
+          - target: macos-x86_64
+            os: macos-15-intel
+            binary: desktop-control-mcp
+            archive: desktop-control-mcp-macos-x86_64
+            pyinstaller_args: --collect-all Quartz
+          - target: macos-arm64
+            os: macos-15
+            binary: desktop-control-mcp
+            archive: desktop-control-mcp-macos-arm64
+            pyinstaller_args: --collect-all Quartz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+      - name: Install build dependencies
+        run: uv sync --locked --group build
+      - name: Build standalone executable
+        shell: bash
+        run: |
+          uv run pyinstaller --clean --noconfirm --onefile --name desktop-control-mcp --collect-all mcp --collect-all pydantic --collect-submodules backends ${{ matrix.pyinstaller_args }} cli.py
+      - name: Smoke test executable (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ./dist/desktop-control-mcp --help
+      - name: Smoke test executable (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./dist/desktop-control-mcp.exe --help
+      - name: Debian 12 compatibility smoke test
+        if: matrix.target == 'linux-x86_64'
+        run: |
+          docker run --rm --platform linux/amd64 --volume "$PWD/dist/desktop-control-mcp:/usr/local/bin/desktop-control-mcp:ro" debian:12-slim /usr/local/bin/desktop-control-mcp --help
+      - name: Debian 13 compatibility smoke test
+        if: matrix.target == 'linux-x86_64'
+        run: |
+          docker run --rm --platform linux/amd64 --volume "$PWD/dist/desktop-control-mcp:/usr/local/bin/desktop-control-mcp:ro" debian:13-slim /usr/local/bin/desktop-control-mcp --help
+      - name: Prepare release asset (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p release
+          cp "dist/${{ matrix.binary }}" "release/${{ matrix.archive }}"
+      - name: Prepare release asset (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release | Out-Null
+          Copy-Item "dist/${{ matrix.binary }}" "release/${{ matrix.archive }}"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: release-${{ matrix.target }}
+          path: release/${{ matrix.archive }}
+          if-no-files-found: error
+          retention-days: 14
+
+  publish-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-binaries]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v6
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
+      - name: Generate SHA-256 manifest
+        run: |
+          cd release-assets
+          sha256sum desktop-control-mcp-* > SHA256SUMS
+          cat SHA256SUMS
+      - name: Publish all platform binaries
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1 || gh release create "${GITHUB_REF_NAME}" --generate-notes
+          gh release upload "${GITHUB_REF_NAME}" release-assets/desktop-control-mcp-* release-assets/SHA256SUMS --clobber

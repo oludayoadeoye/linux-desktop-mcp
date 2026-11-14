@@ -2,7 +2,7 @@
 
 A local Python MCP server with native desktop backends for KDE Plasma Wayland on Linux, macOS, and Windows, plus persistent Playwright browser automation. MCP tool names and schemas stay consistent across operating systems while native backends handle input, screenshots, application launching, and window management.
 
-## Quick install (Linux x86_64)
+## Quick install (Linux x86_64 / ARM64)
 
 Install the latest verified standalone CLI binary:
 
@@ -10,21 +10,21 @@ Install the latest verified standalone CLI binary:
 curl -fsSL https://raw.githubusercontent.com/oludayoadeoye/linux-desktop-mcp/master/install.sh | bash
 ```
 
-The installer downloads the latest GitHub Release, verifies its SHA-256 digest against GitHub release metadata, and installs to `~/.local/bin`. If no prebuilt binary exists for the architecture, it falls back to a uv source installation. The one-command installer installs the CLI only; it does not provision KDE/Wayland dependencies or the Playwright/KWin sidecars.
+The installer detects x86_64 or ARM64 and downloads the matching Linux release asset, verifies its SHA-256 digest against GitHub release metadata, and installs it as `~/.local/bin/desktop-control-mcp`. Other Linux architectures can use the matching release binary directly or install from source with uv. The CLI-only installer does not provision KDE/Wayland dependencies or the Playwright/KWin sidecars.
 
 ## Features
 
 - 19 MCP tools for screenshots, mouse/keyboard input, app launching, desktop status, browser automation, and KDE window management.
 - MCP over stdio (agent-launched local process) or Streamable HTTP (loopback service).
 - Installable `desktop-control-mcp` command, with backward-compatible `linux-desktop-mcp` alias, via uv tools or uvx.
-- Optional one-file Linux executable build using PyInstaller.
+- One-file standalone binaries for Linux x86_64/ARM64, Windows x64, and macOS Intel/Apple Silicon.
 - Native backend architecture: Linux KDE/Wayland, macOS Quartz/Accessibility, and Windows Win32/PyAutoGUI.
 - KWin JavaScript integration with a small session D-Bus bridge for Linux window discovery and targeted window operations.
 - macOS input via Quartz events, screenshots via screencapture, and window operations via System Events Accessibility.
 - Windows input and screenshots via PyAutoGUI, with window management through native Win32 APIs.
 - Persistent headless Firefox context via Playwright MCP.
 
-## macOS setup (initial native backend)
+## macOS setup
 
 The macOS backend uses Quartz for mouse/keyboard events, screencapture for screenshots, open for application launching, and AppleScript/System Events for window operations.
 
@@ -50,11 +50,11 @@ uv run desktop-control-mcp serve --transport http --host 127.0.0.1 --port 8932
 
 On first use, grant Accessibility to the terminal/agent host for mouse, keyboard and window control, and Screen Recording for screenshots under System Settings → Privacy & Security. Restart the MCP process after changing permissions.
 
-The macOS backend has unit tests using mocked Quartz APIs, but it has not yet been exercised on a physical macOS host. Window-management behavior varies by application and its accessibility support. The current one-command release installer remains Linux x86_64 only; macOS and Windows users install from source with uv until native release builds are added.
+The macOS backend has unit tests using mocked Quartz APIs, but it has not yet been exercised on a physical macOS host. Window-management behavior varies by application and its accessibility support. Release binaries are unsigned and are not notarized; macOS may require you to approve the app in Privacy & Security or remove the quarantine attribute after verifying the checksum.
 
-## Windows setup (initial native backend)
+## Windows setup
 
-Requirements: Windows 10/11, Python 3.11+, and uv, running in the signed-in interactive desktop session. Clone the repository, then install the Windows-specific dependencies and development tools:
+Requirements: Windows 10/11, running in the signed-in interactive desktop session. Download `desktop-control-mcp-windows-x86_64.exe` and `SHA256SUMS` from the [latest release](https://github.com/oludayoadeoye/linux-desktop-mcp/releases/latest), then verify it in PowerShell with `Get-FileHash .\desktop-control-mcp-windows-x86_64.exe -Algorithm SHA256`. Compare the hash with the matching line in `SHA256SUMS`. Rename the verified file to `desktop-control-mcp.exe` and place it in a directory on PATH. For source installation instead, use uv:
 
 ```powershell
 git clone https://github.com/oludayoadeoye/linux-desktop-mcp.git
@@ -87,16 +87,34 @@ desktop-control-mcp status
 
 Stdio is the default and is intended for agents that launch MCP servers as subprocesses. HTTP is intended for local service integrations. The Arch installer configures HTTP on `127.0.0.1:8932/mcp`.
 
-## Standalone executable
+## Standalone binaries
 
-Build a Linux one-file executable on the target architecture:
+Every tagged release builds and smoke-tests five native executables:
+
+| Release asset | Platform |
+|---|---|
+| `desktop-control-mcp-linux-x86_64` | Linux x86_64 (Ubuntu 22.04 glibc baseline; Debian 12/13 smoke-tested) |
+| `desktop-control-mcp-linux-aarch64` | Linux ARM64 |
+| `desktop-control-mcp-windows-x86_64.exe` | Windows x64 |
+| `desktop-control-mcp-macos-x86_64` | macOS Intel |
+| `desktop-control-mcp-macos-arm64` | macOS Apple Silicon |
+
+All five assets are published with a single `SHA256SUMS` manifest. Download the matching asset and manifest from [GitHub Releases](https://github.com/oludayoadeoye/linux-desktop-mcp/releases/latest) and verify the SHA-256 before running it.
+
+On EndeavourOS/Arch, use the Linux x86_64 or ARM64 asset matching your CPU. There is no separate Arch executable: the Linux x86_64 build uses an Ubuntu 22.04 glibc baseline and is smoke-tested on Debian 12/13, but the full desktop stack still depends on your distribution's KDE/Wayland, D-Bus and system packages. The Arch installer remains the recommended way to provision those services.
+
+On macOS, download the asset matching Intel or Apple Silicon, make it executable with `chmod +x`, and run it from a logged-in GUI session. Grant Accessibility and Screen Recording permissions to the terminal/agent host. The binaries are currently unsigned and not notarized.
+
+The Windows executable must be launched from the signed-in interactive desktop session; a Windows service running in Session 0 cannot control the user's desktop.
+
+The executable bundles the Python application dependencies only. It does not bundle KDE, D-Bus, ydotool, Spectacle, the KWin bridge, Playwright MCP, or Firefox. See [binary and runtime requirements](docs/INSTALL.md#standalone-linux-executable).
+
+Build locally on the target OS and CPU architecture with:
 
 ```bash
-./scripts/build-binary.sh
-./dist/linux-desktop-mcp --help
+uv sync --locked --group build
+uv run pyinstaller --clean --noconfirm --onefile --name desktop-control-mcp --collect-all mcp --collect-all pydantic --collect-submodules backends cli.py
 ```
-
-GitHub Actions builds the Linux x86_64 executable on Ubuntu 22.04 and smoke-tests it on Debian 12 and Debian 13 containers before publishing a SHA-256 manifest with tagged releases. The binary bundles Python dependencies only; it does not bundle KDE, D-Bus, ydotool, Spectacle, the KWin bridge, Playwright MCP, or Firefox. See [binary and runtime requirements](docs/INSTALL.md#standalone-linux-executable).
 
 ## Development
 
