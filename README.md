@@ -1,106 +1,48 @@
 # Linux Desktop Control MCP
 
-A local-only Python MCP server for controlling an EndeavourOS / KDE Plasma Wayland desktop.
+A local Python MCP server for controlling an EndeavourOS / Arch Linux KDE Plasma Wayland desktop, with window management and persistent Playwright browser automation.
 
-## Services
+## Features
 
-- Desktop MCP: `http://127.0.0.1:8932/mcp`
-- Playwright MCP: `http://127.0.0.1:8931/mcp`
-- KWin bridge: D-Bus session service `org.chatgpt.DesktopControl`
+- 19 MCP tools for screenshots, mouse/keyboard input, app launching, desktop status, browser automation, and KDE window management.
+- KWin JavaScript integration with a small session D-Bus bridge for window discovery and targeted window operations.
+- Persistent headless Firefox context via Playwright MCP.
+- Streamable HTTP transport, bound to loopback only.
 
-All network listeners bind to loopback only.
-
-## Runtime
-
-The project uses Python 3.11+ and `uv`. User-level systemd services manage the processes:
+## Quick install (EndeavourOS / Arch)
 
 ```bash
-systemctl --user status desktop-control playwright-mcp kwin-desktop-bridge
-systemctl --user restart desktop-control
-journalctl --user -u desktop-control -f
+git clone https://github.com/oludayoadeoye/linux-desktop-mcp.git
+cd linux-desktop-mcp
+./scripts/install-arch.sh
 ```
 
-KWin window support is provided by the installed script package:
-`~/.local/share/kwin/scripts/linux-desktop-mcp`.
-It is enabled in `~/.config/kwinrc` and reports window metadata through the session D-Bus bridge.
+Log out and back into KDE after installation so KWin loads the script package. For prerequisites, detailed setup, service management, verification, and uninstall steps, see [Installation guide](docs/INSTALL.md).
 
-## Tools
+## MCP endpoints and clients
 
-### Desktop and input
-- `desktop_screenshot`
-- `desktop_status`
-- `launch_application`
-- `mouse_move`, `mouse_click`
-- `keyboard_type`, `keyboard_hotkey`
+- Desktop MCP: `http://127.0.0.1:8932/mcp`
+- Standalone Playwright MCP: `http://127.0.0.1:8931/mcp`
 
-### Windows
-- `window_list` — titles, app IDs, PIDs, minimized/active state and UUID
-- `window_focus` — title substring or exact app class/name
-- `window_switch`
-- `window_minimize`, `window_maximize`, `window_restore`, `window_close`
+The desktop server integrates with Playwright internally. Most clients should connect only to the desktop endpoint. It uses MCP Streamable HTTP and binds to `127.0.0.1`, so the client must run on the same machine.
 
-Targeted window operations are verified against KWin state before success is reported.
+Client setup examples are documented for [Cursor](docs/INSTALL.md#cursor-direct-local-http), [ChatGPT desktop](docs/INSTALL.md#chatgpt-desktop-app-direct-local-http), and [Claude Desktop](docs/INSTALL.md#claude-desktop-stdio-bridge-to-local-http). ChatGPT web and Claude cloud connectors cannot directly reach a loopback-only server; use their documented secure tunnel or public HTTPS options only if you intentionally choose to make a remote connection available.
 
-### Browser
-- `browser_navigate`
-- `browser_snapshot`
-- `browser_click`
-- `browser_type`
-- `browser_press_key`
+**Verification:** a Python MCP SDK client successfully initialized, discovered all 19 tools, and invoked `desktop_status`. GUI setup examples are based on the clients' published documentation; GUI setup has not been tested on every client. See the [full installation and client guide](docs/INSTALL.md).
 
-The desktop MCP keeps one Playwright MCP client session alive so browser state persists between calls.
+## Development
+
+```bash
+uv sync --locked --group dev
+uv run ruff check .
+uv run pytest -q
+```
+
+The automated tests mock external desktop/browser effects. GitHub Actions runs lint, tests, and Python compilation for pushes and pull requests.
 
 ## Security notes
 
 - Both HTTP MCP endpoints listen on `127.0.0.1` only.
 - Application launching is allowlisted in `main.py`.
 - Browser navigation accepts only absolute HTTP and HTTPS URLs.
-- This is a local desktop automation bridge, not a remote network service. Do not expose its ports publicly.
-
-## Connecting MCP clients
-
-The desktop server exposes the **MCP Streamable HTTP** transport at:
-
-```text
-http://127.0.0.1:8932/mcp
-```
-
-Add that URL in an MCP host that supports connecting to a remote Streamable HTTP server. The endpoint is loopback-only, so the MCP host must run on this same Linux machine (or use an explicitly configured secure tunnel; do not expose this service directly to the internet).
-
-The separate Playwright MCP service is available at:
-
-```text
-http://127.0.0.1:8931/mcp
-```
-
-Connect to it separately only if you want to use the standalone Playwright MCP tools. The desktop server already integrates with this service internally for its `browser_*` tools.
-
-### Client compatibility notes
-
-- **Verified:** a standalone Python MCP SDK client initialized against `http://127.0.0.1:8932/mcp`, discovered all 19 tools, and successfully called `desktop_status`.
-- **Not yet verified:** setup and tool invocation from individual GUI hosts (for example, Claude Desktop or ChatGPT). Their support for remote Streamable HTTP endpoints and their configuration screens vary by version. Follow the host's current documentation and use the endpoint above where remote HTTP MCP servers are supported.
-- **Not a stdio server:** this project currently serves Streamable HTTP; clients that only accept stdio MCP servers need a compatible HTTP-to-stdio bridge or a stdio transport implementation, neither of which is included here.
-
-### Verify a connection with the Python MCP SDK
-
-From this project directory, run:
-
-```bash
-uv run python - <<'PY'
-import asyncio
-from mcp import ClientSession
-from mcp.client.streamable_http import streamablehttp_client
-
-async def main():
-    async with streamablehttp_client("http://127.0.0.1:8932/mcp") as (read, write, _):
-        async with ClientSession(read, write) as session:
-            info = await session.initialize()
-            tools = await session.list_tools()
-            print(f"Connected to {info.serverInfo.name} {info.serverInfo.version}")
-            print(f"Discovered {len(tools.tools)} tools")
-            result = await session.call_tool("desktop_status", {})
-            print(result.content)
-
-asyncio.run(main())
-PY
-```
+- Desktop-control tools can interact with the user's active desktop. Connect only trusted MCP clients; do not expose these ports publicly.
