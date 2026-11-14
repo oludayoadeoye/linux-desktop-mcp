@@ -6,19 +6,20 @@ on:
     paths:
       - "site/**"
       - ".github/workflows/pages.yml"
+  # Run on every master push so a newer non-docs commit cannot strand a
+  # documentation change by making its deployment SHA appear stale.
   push:
     branches: [master]
-    paths:
-      - "site/**"
-      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# Keep validation runs independent. A PR validation must never cancel a live
+# deployment. The deploy job below serializes actual publications.
 concurrency:
-  group: github-pages
-  cancel-in-progress: true
+  group: github-pages-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -48,6 +49,11 @@ jobs:
       (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')
     needs: build
+    # Serialize publications so an older artifact cannot finish after and
+    # overwrite a newer deployment. Newer master runs wait for the active one.
+    concurrency:
+      group: github-pages-deploy
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
