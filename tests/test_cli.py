@@ -45,10 +45,22 @@ def test_http_rejects_invalid_port(capsys):
     assert "Port must be" in capsys.readouterr().err
 
 
-def test_status_reports_services_and_ports(monkeypatch, capsys):
+def test_status_reports_linux_services_and_ports(monkeypatch, capsys):
+    monkeypatch.setattr(cli.sys, "platform", "linux")
     monkeypatch.setattr(cli, "_service_status", lambda name: "active")
     monkeypatch.setattr(cli, "_port_status", lambda port: "reachable")
     assert cli.main(["status"]) == 0
     output = capsys.readouterr().out
     assert "desktop-control.service: active" in output
+    assert "Playwright MCP (127.0.0.1:8931): reachable" in output
+
+
+def test_status_reports_macos_permissions_and_ports(monkeypatch, capsys):
+    monkeypatch.setattr(cli.sys, "platform", "darwin")
+    monkeypatch.setattr(cli, "_port_status", lambda port: "reachable")
+    assert cli.main(["status"]) == 0
+    output = capsys.readouterr().out
+    assert "Native macOS backend: selected" in output
+    assert "Accessibility permission" in output
+    assert "Screen Recording permission" in output
     assert "Playwright MCP (127.0.0.1:8931): reachable" in output
