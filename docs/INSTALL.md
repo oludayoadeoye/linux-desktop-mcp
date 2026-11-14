@@ -297,7 +297,9 @@ A one-file PyInstaller build can be produced on the target Linux architecture:
 ./dist/linux-desktop-mcp --help
 ```
 
-Copy `dist/linux-desktop-mcp` to a directory on PATH. PyInstaller bundles the Python application and Python dependencies, but **does not bundle the desktop environment or companion services**. The target still needs the KDE/Wayland session, user D-Bus, `ydotool`, `qdbus6`, Spectacle, the KWin bridge service, and the Playwright MCP sidecar/browser. Build on the Linux distribution/architecture you intend to support. Do not treat a binary as a portable replacement for the Arch installer.
+The release binary is built on Ubuntu 22.04 (glibc baseline) and GitHub Actions smoke-tests the executable on Debian 12 and Debian 13 containers. The current prebuilt artifact targets Linux x86_64; other architectures use the uv source-install fallback. This is a CLI runtime check, not a full desktop integration test.
+
+PyInstaller bundles the Python application and Python dependencies, but **does not bundle the desktop environment or companion services**. The target still needs the KDE/Wayland session, user D-Bus, `ydotool`, `qdbus6`, Spectacle, the KWin bridge service, and the Playwright MCP sidecar/browser. The complete desktop integration installer currently targets EndeavourOS / Arch Linux with KDE Plasma Wayland. Do not treat the standalone binary as a portable replacement for the Arch installer.
 
 ### What is installed vs. what runs
 

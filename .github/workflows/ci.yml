@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   lint-test-build:
-    # Build on an older glibc baseline to improve compatibility with Debian and other Linux distributions.
+    # Build on Ubuntu 22.04 to keep the glibc baseline compatible with modern Debian releases.
     runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
@@ -38,6 +38,9 @@ jobs:
       - name: Test
         run: uv run pytest -q
 
+      - name: Check shell installer syntax
+        run: bash -n install.sh scripts/install-arch.sh scripts/build-binary.sh
+
       - name: Compile Python modules
         run: uv run python -m compileall -q main.py cli.py kwin-bridge-service.py tests
 
@@ -48,6 +51,18 @@ jobs:
         run: |
           uv sync --locked --group build
           ./scripts/build-binary.sh
+
+      - name: Smoke test executable on Debian 12
+        run: |
+          docker run --rm --platform linux/amd64 \
+            --volume "$PWD/dist/linux-desktop-mcp:/usr/local/bin/linux-desktop-mcp:ro" \
+            debian:12-slim /usr/local/bin/linux-desktop-mcp --help
+
+      - name: Smoke test executable on Debian 13
+        run: |
+          docker run --rm --platform linux/amd64 \
+            --volume "$PWD/dist/linux-desktop-mcp:/usr/local/bin/linux-desktop-mcp:ro" \
+            debian:13-slim /usr/local/bin/linux-desktop-mcp --help
 
       - name: Generate executable checksum
         run: cd dist && sha256sum linux-desktop-mcp > SHA256SUMS

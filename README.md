@@ -54,7 +54,7 @@ Build a Linux one-file executable on the target architecture:
 ./dist/linux-desktop-mcp --help
 ```
 
-GitHub Actions builds the Linux x86_64 executable on Ubuntu 22.04 as an older glibc baseline, and publishes a SHA-256 manifest with tagged releases. Debian compatibility still needs testing on the specific Debian versions you intend to support. The binary bundles Python dependencies only; it does not bundle KDE, D-Bus, ydotool, Spectacle, the KWin bridge, Playwright MCP, or Firefox. See [binary and runtime requirements](docs/INSTALL.md#standalone-linux-executable).
+GitHub Actions builds the Linux x86_64 executable on Ubuntu 22.04 and smoke-tests it on Debian 12 and Debian 13 containers before publishing a SHA-256 manifest with tagged releases. The binary bundles Python dependencies only; it does not bundle KDE, D-Bus, ydotool, Spectacle, the KWin bridge, Playwright MCP, or Firefox. See [binary and runtime requirements](docs/INSTALL.md#standalone-linux-executable).
 
 ## Development
 
