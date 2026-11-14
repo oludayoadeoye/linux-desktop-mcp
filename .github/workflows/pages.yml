@@ -1,6 +1,11 @@
 name: Deploy documentation to GitHub Pages
 
 on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
   push:
     branches: [master]
     paths:
@@ -23,6 +28,7 @@ jobs:
         uses: actions/checkout@v5
       - name: Validate documentation files
         run: |
+          set -eu
           test -s site/index.html
           test -s site/assets/style.css
           test -s site/guides/quickstart.html
@@ -36,16 +42,31 @@ jobs:
           path: site
 
   deploy:
-    if: github.event_name != 'pull_request'
+    # Only publish commits that are the current master tip. PRs and manual
+    # dispatches from other branches can validate/build but never publish.
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master')
     needs: build
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Checkout deployment commit
+        uses: actions/checkout@v5
+      - name: Ensure this is still the latest master commit
+        run: |
+          set -eu
+          current_master_sha="$(git ls-remote origin refs/heads/master | cut -f1)"
+          if [ "$GITHUB_SHA" != "$current_master_sha" ]; then
+            echo "Refusing to publish stale commit $GITHUB_SHA; master is now $current_master_sha"
+            exit 1
+          fi
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
