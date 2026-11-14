@@ -204,6 +204,14 @@ Desktop automation is powerful. Treat it like giving an agent access to your key
 
 Issues, bug reports, ideas, and pull requests are welcome. If you test the project on a different Linux distribution, Windows PC, or Mac, please share your platform details and what worked.
 
+Before contributing, please read the project rules:
+
+- [Contributor guide](CONTRIBUTING.md) — setup, architecture, tests, and pull request process.
+- [AI agent instructions](AGENTS.md) — strict scope, safety, and maintainability rules for coding agents and bots.
+- [Pull request checklist](.github/pull_request_template.md) — required validation and review details.
+
+**The most important rule:** make small, tested, explainable changes. Avoid broad rewrites, unrelated refactoring, unnecessary dependencies, and claims that have not been verified.
+
 - **Report a bug:** [Open an issue](https://github.com/oludayoadeoye/linux-desktop-mcp/issues)
 - **Suggest an idea:** [Start a discussion](https://github.com/oludayoadeoye/linux-desktop-mcp/discussions)
 - **Source code:** [GitHub repository](https://github.com/oludayoadeoye/linux-desktop-mcp)
