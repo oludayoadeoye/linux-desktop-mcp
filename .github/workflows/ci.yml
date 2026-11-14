@@ -112,7 +112,11 @@ jobs:
       - uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: true
+      - name: Install build dependencies (Intel macOS)
+        if: matrix.target == 'macos-x86_64'
+        run: uv sync --locked --group build --no-install-package cryptography
       - name: Install build dependencies
+        if: matrix.target != 'macos-x86_64'
         run: uv sync --locked --group build
       - name: Build standalone executable
         shell: bash
