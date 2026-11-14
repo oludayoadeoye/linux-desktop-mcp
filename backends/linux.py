@@ -27,7 +27,7 @@ class LinuxBackend:
         os.close(fd)
         p = Path(name)
         try:
-            m.run_checked(["spectacle", "-b", "-n", "-o", str(p)], timeout=20)
+            m.run_checked(["spectacle", "-f", "-b", "-n", "-o", str(p)], timeout=20)
             if not p.exists() or not p.stat().st_size:
                 raise RuntimeError("Spectacle did not produce a screenshot")
             return Image(data=p.read_bytes(), format="png")

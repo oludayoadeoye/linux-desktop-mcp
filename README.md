@@ -1,73 +1,66 @@
 # Desktop Control MCP
 
-A local Python MCP server with native desktop backends for KDE Plasma Wayland on Linux, macOS, and Windows, plus persistent Playwright browser automation. MCP tool names and schemas stay consistent across operating systems while native backends handle input, screenshots, application launching, and window management.
+**Give your AI agent hands-on control of a real desktop.**
 
-## Quick install (Linux x86_64 / ARM64)
+Desktop Control MCP is a public Model Context Protocol (MCP) project that lets AI agents see and interact with your computer: take screenshots, move the mouse, click, type, open apps, and manage windows.
 
-Install the latest verified standalone CLI binary:
+One consistent set of MCP tools. Native desktop integration across **Linux, Windows, and macOS**.
+
+<p align="center">
+  <a href="https://github.com/oludayoadeoye/linux-desktop-mcp/releases/latest"><img src="https://img.shields.io/github/v/release/oludayoadeoye/linux-desktop-mcp?display_name=tag&style=for-the-badge" alt="Latest release"></a>
+  <a href="https://github.com/oludayoadeoye/linux-desktop-mcp/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/oludayoadeoye/linux-desktop-mcp/ci.yml?branch=master&style=for-the-badge" alt="Build status"></a>
+  <a href="https://github.com/oludayoadeoye/linux-desktop-mcp/stargazers"><img src="https://img.shields.io/github/stars/oludayoadeoye/linux-desktop-mcp?style=for-the-badge" alt="GitHub stars"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/oludayoadeoye/linux-desktop-mcp/releases/latest"><strong>⬇ Download</strong></a> ·
+  <a href="https://github.com/oludayoadeoye/linux-desktop-mcp/releases"><strong>Releases</strong></a> ·
+  <a href="docs/INSTALL.md"><strong>Installation guide</strong></a> ·
+  <a href="#live-demo"><strong>Live demo</strong></a>
+</p>
+
+---
+
+## What can it do?
+
+Your agent can work with the desktop instead of only talking about it.
+
+| Your agent can… | What that means |
+|---|---|
+| 👀 **See the screen** | Capture a screenshot and inspect what's visible |
+| 🖱️ **Use the mouse** | Move, click, and interact with on-screen controls |
+| ⌨️ **Type for you** | Enter text and send keyboard shortcuts |
+| 🚀 **Open applications** | Launch supported desktop applications |
+| 🪟 **Manage windows** | List, focus, switch, minimize, maximize, restore, and close windows |
+| 🌐 **Use a browser** | Navigate pages and interact with browser elements through the Playwright MCP sidecar |
+
+## Live demo
+
+A real screen recording of the agent controlling a desktop is being prepared. The finished video and a lightweight preview will be published here.
+
+## Get started
+
+Choose the installation that matches your computer. The standalone downloads are ready to run; the full Linux setup also configures the KDE/Wayland integration and supporting services.
+
+### Linux
+
+**Fast install — Linux x86_64 and ARM64**
+
+Open a terminal and run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/oludayoadeoye/linux-desktop-mcp/master/install.sh | bash
 ```
 
-The installer detects x86_64 or ARM64 and downloads the matching Linux release asset, verifies its SHA-256 digest against GitHub release metadata, and installs it as `~/.local/bin/desktop-control-mcp`. Other Linux architectures can use the matching release binary directly or install from source with uv. The CLI-only installer does not provision KDE/Wayland dependencies or the Playwright/KWin sidecars.
+Then check the installation:
 
-## Features
-
-- 19 MCP tools for screenshots, mouse/keyboard input, app launching, desktop status, browser automation, and KDE window management.
-- MCP over stdio (agent-launched local process) or Streamable HTTP (loopback service).
-- Installable `desktop-control-mcp` command, with backward-compatible `linux-desktop-mcp` alias, via uv tools or uvx.
-- One-file standalone binaries for Linux x86_64/ARM64, Windows x64, and macOS Intel/Apple Silicon.
-- Native backend architecture: Linux KDE/Wayland, macOS Quartz/Accessibility, and Windows Win32/PyAutoGUI.
-- KWin JavaScript integration with a small session D-Bus bridge for Linux window discovery and targeted window operations.
-- macOS input via Quartz events, screenshots via screencapture, and window operations via System Events Accessibility.
-- Windows input and screenshots via PyAutoGUI, with window management through native Win32 APIs.
-- Persistent headless Firefox context via Playwright MCP.
-
-## macOS setup
-
-The macOS backend uses Quartz for mouse/keyboard events, screencapture for screenshots, open for application launching, and AppleScript/System Events for window operations.
-
-Requirements: macOS 13+, Python 3.11+, uv, Node.js/npm, and a logged-in GUI session. From a cloned checkout:
-
-~~~bash
-uv sync --locked --group dev
-npm install --global playwright-mcp playwright
-playwright install firefox
-~~~
-
-Start the browser sidecar in one terminal:
-
-~~~bash
-playwright-mcp --port 8931 --host 127.0.0.1 --browser firefox --isolated --headless
-~~~
-
-Start the desktop MCP in another terminal:
-
-~~~bash
-uv run desktop-control-mcp serve --transport http --host 127.0.0.1 --port 8932
-~~~
-
-On first use, grant Accessibility to the terminal/agent host for mouse, keyboard and window control, and Screen Recording for screenshots under System Settings → Privacy & Security. Restart the MCP process after changing permissions.
-
-The macOS backend has unit tests using mocked Quartz APIs, but it has not yet been exercised on a physical macOS host. Window-management behavior varies by application and its accessibility support. Release binaries are unsigned and are not notarized; macOS may require you to approve the app in Privacy & Security or remove the quarantine attribute after verifying the checksum.
-
-## Windows setup
-
-Requirements: Windows 10/11, running in the signed-in interactive desktop session. Download `desktop-control-mcp-windows-x86_64.exe` and `SHA256SUMS` from the [latest release](https://github.com/oludayoadeoye/linux-desktop-mcp/releases/latest), then verify it in PowerShell with `Get-FileHash .\desktop-control-mcp-windows-x86_64.exe -Algorithm SHA256`. Compare the hash with the matching line in `SHA256SUMS`. Rename the verified file to `desktop-control-mcp.exe` and place it in a directory on PATH. For source installation instead, use uv:
-
-```powershell
-git clone https://github.com/oludayoadeoye/linux-desktop-mcp.git
-cd linux-desktop-mcp
-uv sync --locked --group dev
-uv run desktop-control-mcp serve --transport stdio
+```bash
+desktop-control-mcp status
 ```
 
-The Windows backend uses Win32 APIs for window enumeration, focus, minimize, maximize, restore, and close; PyAutoGUI handles screenshots, mouse input, and keyboard input. Applications are launched from a small allowlist (Notepad, Calculator, Terminal, Explorer, Edge, Chrome, Firefox, VS Code, Word, Excel, and Paint). Run the MCP host in the logged-in interactive session; Windows services running in session 0 cannot control the user desktop. This backend is covered by mocked unit tests and Windows CI, but still needs interactive validation on a physical Windows desktop.
+**EndeavourOS / Arch Linux — full desktop integration**
 
-## Full EndeavourOS / Arch setup
-
-For the complete KDE Wayland setup, including system dependencies and user services, use the Arch installer:
+For KDE Plasma on Wayland, install the complete stack (desktop MCP, KWin bridge, and Playwright browser sidecar):
 
 ```bash
 git clone https://github.com/oludayoadeoye/linux-desktop-mcp.git
@@ -75,60 +68,136 @@ cd linux-desktop-mcp
 ./scripts/install-arch.sh
 ```
 
-It creates and starts the Playwright MCP, KWin D-Bus bridge, and desktop MCP user services. Log out and back into KDE after installation so KWin loads its script package. See [the full installation guide](docs/INSTALL.md).
+Log out and back into KDE after installation so KWin can load its script package. See the [Arch and Linux installation guide](docs/INSTALL.md).
 
-## Run modes
+### Windows
+
+1. Download **desktop-control-mcp-windows-x86_64.exe** from [GitHub Releases](https://github.com/oludayoadeoye/linux-desktop-mcp/releases/latest).
+2. Download `SHA256SUMS` and verify the executable in PowerShell:
+
+```powershell
+Get-FileHash .\\desktop-control-mcp-windows-x86_64.exe -Algorithm SHA256
+```
+
+3. Compare the hash with the matching entry in `SHA256SUMS`, rename the verified file to `desktop-control-mcp.exe`, and place it in a folder on your PATH.
+
+Run it from your signed-in Windows desktop session. A Windows service in Session 0 cannot interact with your visible desktop.
+
+### macOS
+
+Download the matching **Intel** or **Apple Silicon** executable from [GitHub Releases](https://github.com/oludayoadeoye/linux-desktop-mcp/releases/latest), then:
+
+```bash
+chmod +x ./desktop-control-mcp-macos-arm64
+./desktop-control-mcp-macos-arm64 --help
+```
+
+Use the Intel asset on Intel Macs. On first use, grant the terminal or agent host **Accessibility** and **Screen Recording** permissions in System Settings → Privacy & Security.
+
+> **macOS note:** Release binaries are currently unsigned and not notarized. Verify the checksum before running; macOS may ask you to approve the executable. The macOS backend has CI/unit-test coverage but still needs validation on a physical Mac.
+
+## Downloads
+
+Every tagged release publishes five standalone executables and one SHA-256 checksum manifest.
+
+| Download | Supported system |
+|---|---|
+| `desktop-control-mcp-linux-x86_64` | Linux 64-bit Intel / AMD |
+| `desktop-control-mcp-linux-aarch64` | Linux ARM64 |
+| `desktop-control-mcp-windows-x86_64.exe` | Windows 10/11, 64-bit |
+| `desktop-control-mcp-macos-x86_64` | macOS, Intel |
+| `desktop-control-mcp-macos-arm64` | macOS, Apple Silicon |
+| `SHA256SUMS` | Checksums for all five downloads |
+
+**[Get the latest release →](https://github.com/oludayoadeoye/linux-desktop-mcp/releases/latest)**
+
+**Using EndeavourOS or Arch?** Download the Linux binary that matches your CPU. There is no separate Arch binary. The standalone executable contains the Python application, while the full desktop experience still relies on system components such as KDE/Wayland, D-Bus, ydotool, the KWin bridge, and Playwright/Firefox. The Arch installer configures those supporting services.
+
+## How it works
+
+Desktop Control MCP is the bridge between an AI agent and the operating system:
+
+1. **The agent asks** to see the screen or perform an action.
+2. **The MCP server receives** the tool call.
+3. **The native backend acts** on the active desktop using the platform's supported APIs.
+4. **The result returns** to the agent so it can decide what to do next.
+
+```text
+AI agent  ⇄  MCP tools  ⇄  Desktop Control MCP  ⇄  Your desktop
+                                            ├── Linux (KDE / Wayland)
+                                            ├── Windows (Win32)
+                                            └── macOS (Quartz / Accessibility)
+```
+
+The project exposes **19 MCP tools** with a consistent interface across supported platforms. Browser automation is provided through a separate Playwright MCP sidecar.
+
+## Connect an MCP client
+
+The server supports **stdio** (recommended when an agent launches the server) and **Streamable HTTP** (for a local service integration).
+
+Start with stdio:
 
 ```bash
 desktop-control-mcp serve --transport stdio
-desktop-control-mcp serve --transport http --host 127.0.0.1 --port 8932
-desktop-control-mcp status
 ```
 
-Stdio is the default and is intended for agents that launch MCP servers as subprocesses. HTTP is intended for local service integrations. The Arch installer configures HTTP on `127.0.0.1:8932/mcp`.
+Or run a local HTTP endpoint:
 
-## Standalone binaries
+```bash
+desktop-control-mcp serve --transport http --host 127.0.0.1 --port 8932
+```
 
-Every tagged release builds and smoke-tests five native executables:
+For a full EndeavourOS/Arch setup, the installer configures the supporting services and local endpoint. Follow the [installation guide](docs/INSTALL.md) for client configuration and runtime requirements.
 
-| Release asset | Platform |
-|---|---|
-| `desktop-control-mcp-linux-x86_64` | Linux x86_64 (Ubuntu 22.04 glibc baseline; Debian 12/13 smoke-tested) |
-| `desktop-control-mcp-linux-aarch64` | Linux ARM64 |
-| `desktop-control-mcp-windows-x86_64.exe` | Windows x64 |
-| `desktop-control-mcp-macos-x86_64` | macOS Intel |
-| `desktop-control-mcp-macos-arm64` | macOS Apple Silicon |
+## Platform support
 
-All five assets are published with a single `SHA256SUMS` manifest. Download the matching asset and manifest from [GitHub Releases](https://github.com/oludayoadeoye/linux-desktop-mcp/releases/latest) and verify the SHA-256 before running it.
+| Platform | Backend | Build / CI | Real desktop validation |
+|---|---|---:|---|
+| Linux KDE / Wayland | KWin, D-Bus, ydotool, Spectacle | ✅ | ✅ EndeavourOS |
+| Windows x64 | Win32 + PyAutoGUI | ✅ | Pending physical Windows test |
+| macOS Intel | Quartz + Accessibility | ✅ | Pending physical Mac test |
+| macOS Apple Silicon | Quartz + Accessibility | ✅ | Pending physical Mac test |
 
-On EndeavourOS/Arch, use the Linux x86_64 or ARM64 asset matching your CPU. There is no separate Arch executable: the Linux x86_64 build uses an Ubuntu 22.04 glibc baseline and is smoke-tested on Debian 12/13, but the full desktop stack still depends on your distribution's KDE/Wayland, D-Bus and system packages. The Arch installer remains the recommended way to provision those services.
+Build and CI success confirms packaging and automated tests; it does not replace testing on each physical operating system. macOS and Windows interactive validation is still on the project roadmap.
 
-On macOS, download the asset matching Intel or Apple Silicon, make it executable with `chmod +x`, and run it from a logged-in GUI session. Grant Accessibility and Screen Recording permissions to the terminal/agent host. The binaries are currently unsigned and not notarized.
+## Development
 
-The Windows executable must be launched from the signed-in interactive desktop session; a Windows service running in Session 0 cannot control the user's desktop.
+Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
-The executable bundles the Python application dependencies only. It does not bundle KDE, D-Bus, ydotool, Spectacle, the KWin bridge, Playwright MCP, or Firefox. See [binary and runtime requirements](docs/INSTALL.md#standalone-linux-executable).
+```bash
+git clone https://github.com/oludayoadeoye/linux-desktop-mcp.git
+cd linux-desktop-mcp
+uv sync --locked --group dev
+uv run ruff check .
+uv run pytest -q
+```
 
-Build locally on the target OS and CPU architecture with:
+Build a standalone executable on the target operating system and CPU architecture:
 
 ```bash
 uv sync --locked --group build
 uv run pyinstaller --clean --noconfirm --onefile --name desktop-control-mcp --collect-all mcp --collect-all pydantic --collect-submodules backends cli.py
 ```
 
-## Development
-
-```bash
-uv sync --locked --group dev
-uv run ruff check .
-uv run pytest -q
-```
-
-The automated tests mock external desktop/browser effects. GitHub Actions runs lint, tests, compilation, and packaging.
+GitHub Actions runs linting, automated tests, platform builds, and smoke tests for release artifacts.
 
 ## Security
 
-- The HTTP MCP endpoint binds to `127.0.0.1` by default.
-- Application launching is allowlisted in `main.py`.
-- Browser navigation accepts only absolute HTTP and HTTPS URLs.
-- Desktop-control tools can interact with the user's active desktop. Connect only trusted MCP clients; do not expose these ports publicly.
+Desktop automation is powerful. Treat it like giving an agent access to your keyboard and mouse.
+
+- The HTTP endpoint binds to `127.0.0.1` by default. Do not expose it directly to the public internet.
+- Connect only MCP clients you trust.
+- Application launching is restricted by an allowlist where supported.
+- Review the actions your agent is asked to perform, especially actions involving accounts, files, or payments.
+
+## Contributing
+
+Issues, bug reports, ideas, and pull requests are welcome. If you test the project on a different Linux distribution, Windows PC, or Mac, please share your platform details and what worked.
+
+- **Report a bug:** [Open an issue](https://github.com/oludayoadeoye/linux-desktop-mcp/issues)
+- **Suggest an idea:** [Start a discussion](https://github.com/oludayoadeoye/linux-desktop-mcp/discussions)
+- **Source code:** [GitHub repository](https://github.com/oludayoadeoye/linux-desktop-mcp)
+
+## License
+
+The repository is public, but it does not yet include a license file. Until a license is published, no permission to reuse, modify, or redistribute the code is granted.

@@ -57,8 +57,15 @@ def test_desktop_screenshot_returns_png_and_cleans_tempfile(monkeypatch):
         captured["path"].write_bytes(b"fake-png")
         return ""
 
-    monkeypatch.setattr(main, "run_checked", fake_run)
+    calls = []
+
+    def checked(args, timeout=8.0):
+        calls.append(args)
+        return fake_run(args, timeout)
+
+    monkeypatch.setattr(main, "run_checked", checked)
     result = main.desktop_screenshot()
+    assert calls[0][:4] == ["spectacle", "-f", "-b", "-n"]
     assert result.data == b"fake-png"
     assert result._format == "png"
     assert not captured["path"].exists()
