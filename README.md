@@ -15,6 +15,7 @@ One consistent set of MCP tools. Native desktop integration across **Linux, Wind
 <p align="center">
   <a href="https://github.com/oludayoadeoye/linux-desktop-mcp/releases/latest"><strong>⬇ Download</strong></a> ·
   <a href="https://github.com/oludayoadeoye/linux-desktop-mcp/releases"><strong>Releases</strong></a> ·
+  <a href="https://oludayoadeoye.github.io/linux-desktop-mcp/"><strong>Documentation site</strong></a> ·
   <a href="docs/INSTALL.md"><strong>Installation guide</strong></a> ·
   <a href="#live-demo"><strong>Live demo</strong></a>
 </p>
